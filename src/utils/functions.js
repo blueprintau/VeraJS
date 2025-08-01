@@ -6,3 +6,6 @@ function unwrapElement(element) {
 function unixToDate(unixTimestamp) {
     return new Date(unixTimestamp * 1000);
 }
+
+
+export { unwrapElement, unixToDate };

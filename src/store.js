@@ -50,3 +50,5 @@ function useStore(name, initialState = {}) {
 function getStore(name) {
     return VeraJS._instance._stores.get(name) || null;
 }
+
+export { useStore, getStore };

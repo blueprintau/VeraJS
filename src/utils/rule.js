@@ -37,3 +37,5 @@ function rule() {
 
     return rule;
 }
+
+export { rule };

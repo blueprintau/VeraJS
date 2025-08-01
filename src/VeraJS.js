@@ -135,3 +135,5 @@ class VeraJS {
     }
 
 }
+
+export default VeraJS;

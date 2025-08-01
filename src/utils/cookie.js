@@ -54,3 +54,5 @@ function removeCookie(name, options = {}) {
     cookieString += `; path=${options.path || '/'}`;
     document.cookie = cookieString;
 }
+
+export { useCookie, setCookie, getCookie, removeCookie };

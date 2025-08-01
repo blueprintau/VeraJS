@@ -171,3 +171,5 @@ class VeraRouter {
         return this;
     }
 }
+
+export default VeraRouter;

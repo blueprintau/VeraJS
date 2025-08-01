@@ -57,3 +57,5 @@ function isElement(variable,name){
 
     return variable.tagName === name;
 }
+
+export { useRef, getRef, useEffect, isRef };

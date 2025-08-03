@@ -1,3 +1,6 @@
+import VeraRouter from './core/VeraRouter.js';
+import Component from './core/Component.js';
+
 class VeraJS {
 
     _components;
@@ -131,7 +134,11 @@ class VeraJS {
     }
 
     static router(){
-        return this._instance._router;
+        return VeraJS._instance._router;
+    }
+
+    static getComponentClasses() {
+        return VeraJS._componentClasses;
     }
 
 }

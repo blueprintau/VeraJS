@@ -1,3 +1,5 @@
+import VeraJS from "../VeraJS";
+
 class VeraRouter {
 
     _anchorComponent;

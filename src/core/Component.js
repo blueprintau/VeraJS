@@ -1,3 +1,6 @@
+import VeraJS from '../VeraJS.js';
+import { unwrapElement } from '../utils/functions.js';
+
 class Component {
 
     _element;
@@ -26,10 +29,10 @@ class Component {
     _checkElementAndChildren(element) {
         // Check all direct children of this element
         Array.from(element.children).forEach(child => {
-            if (VeraJS._componentClasses.has(child.tagName)) {
+            if (VeraJS.getComponentClasses().has(child.tagName)) {
 
                 // Found a Vera component - process it
-                let instance = new (VeraJS._componentClasses.get(child.tagName))();
+                let instance = new (VeraJS.getComponentClasses().get(child.tagName))();
                 let outcome = instance.beforeMount();
 
                 if(outcome === VeraJS.ABORT_MOUNT){
@@ -89,4 +92,5 @@ class Component {
 
 }
 
+window.Component = Component;
 export default Component;

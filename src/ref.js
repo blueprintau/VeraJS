@@ -1,3 +1,5 @@
+import VeraJS from './VeraJS.js';
+
 function useRef(value = null, id = crypto.randomUUID()){
 
     const ref = {

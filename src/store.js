@@ -1,4 +1,5 @@
-// CREATE stores (like useRef creates refs)
+import VeraJS from './VeraJS.js';
+
 function useStore(name, initialState = {}) {
     // Check if the store already exists
     if (VeraJS._instance._stores.has(name)) {

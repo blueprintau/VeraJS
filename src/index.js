@@ -17,9 +17,6 @@ import { useStore, getStore } from './store.js';
 // Main framework
 import VeraJS from './VeraJS.js';
 
-// Built-in components (this will auto-register)
-import './components/VeraRouterView.js';
-
 // Create the main VeraJS API object that will be exposed
 const VeraJSAPI = {
     // Core framework methods
@@ -28,6 +25,10 @@ const VeraJSAPI = {
     registerComponentClass: VeraJS.registerComponentClass,
     addComponent: VeraJS.addComponent,
     ABORT_MOUNT: VeraJS.ABORT_MOUNT,
+
+    // Static properties that components need
+    _componentClasses: VeraJS._componentClasses,
+    _instance: VeraJS._instance,
 
     // Utility functions
     useRef,
@@ -53,7 +54,7 @@ const VeraJSAPI = {
     }
 };
 
-// Make VeraJS globally available with the same API
+// Make VeraJS globally available FIRST
 if (typeof window !== 'undefined') {
     window.VeraJS = VeraJSAPI;
 
@@ -72,6 +73,29 @@ if (typeof window !== 'undefined') {
     window.unwrapElement = unwrapElement;
     window.unixToDate = unixToDate;
     window.Component = Component;
+}
+
+// Define VeraRouterView inline AFTER VeraJS is available
+class VeraRouterView extends Component {
+    init(props) {
+        // Access via the global VeraJS
+        if (window.VeraJS && window.VeraJS.router) {
+            window.VeraJS.router()._setAnchorComponent(this);
+        }
+    }
+
+    getTemplate() {
+        return '<div id="{id}" class="vera-router-view"></div>';
+    }
+
+    render(component, params) {
+        // Implementation here
+    }
+}
+
+// Register the component using the global VeraJS
+if (window.VeraJS) {
+    window.VeraJS.registerComponentClass("VERA-ROUTER-VIEW", VeraRouterView);
 }
 
 // Export for module systems

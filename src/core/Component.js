@@ -1,5 +1,5 @@
-import VeraJS from '../VeraJS.js';
 import { unwrapElement } from '../utils/functions.js';
+import VeraJS from "../VeraJS";
 
 class Component {
 
@@ -15,7 +15,6 @@ class Component {
     }
 
     querySelector(selector,all=false){
-
         if(all){
             return this._element.querySelectorAll(selector);
         }
@@ -27,47 +26,61 @@ class Component {
     }
 
     _checkElementAndChildren(element) {
-        // Check all direct children of this element
+
         Array.from(element.children).forEach(child => {
             if (VeraJS.getComponentClasses().has(child.tagName)) {
+                try {
+                    // Found a Vera component - process it
+                    let ComponentClass = window.VeraJS._componentClasses.get(child.tagName);
+                    let instance = new ComponentClass();
 
-                // Found a Vera component - process it
-                let instance = new (VeraJS.getComponentClasses().get(child.tagName))();
-                let outcome = instance.beforeMount();
+                    let outcome = instance.beforeMount();
 
-                if(outcome === VeraJS.ABORT_MOUNT){
-                    return;
+                    if(outcome === window.VeraJS.ABORT_MOUNT){
+                        //Abort
+                        return;
+                    }
+
+                    let props = child.dataset;
+                    props.id = child.id || props.id || crypto.randomUUID();
+                    props.innerHTML = child.innerHTML;
+
+                    let template = instance.getTemplate();
+
+                    child.innerHTML = template.replace(/\{([^}]+)}/g, (match, key) => {
+                        return props[key] !== undefined ? props[key] : match;
+                    });
+
+                    let styleAttribute = child.getAttribute('style');
+
+                    unwrapElement(child);
+
+                    instance._element = document.getElementById(props.id);
+
+                    if (styleAttribute) {
+                        instance._element.setAttribute('style', styleAttribute);
+                    }
+
+                    instance._id = props.id;
+                    instance._parent = this;
+
+                    if (instance._element) {
+                        instance.init(props);
+
+                        // Let the component handle its own children
+                        instance._evaluateChildComponents();
+
+                        window.VeraJS.addComponent(instance);
+                    } else {
+                        console.error(`Failed to find element with ID ${props.id} for ${child.tagName}`);
+                    }
+
+                } catch (error) {
+                    console.error(`Error processing component ${child.tagName}:`, error);
+                    console.error('Error stack:', error.stack);
                 }
 
-                let props = child.dataset;
-                props.id = child.id || props.id || crypto.randomUUID();
-                props.innerHTML = child.innerHTML;
-
-                child.innerHTML = instance.getTemplate().replace(/\{([^}]+)}/g, (match, key) => {
-                    return props[key] !== undefined ? props[key] : match;
-                });
-
-                let styleAttribute = child.getAttribute('style');
-
-                unwrapElement(child);
-
-                instance._element = document.getElementById(props.id);
-
-                if (styleAttribute) {
-                    instance._element.setAttribute('style', styleAttribute);
-                }
-
-                instance._id = props.id;
-                instance._parent = this;
-
-                if (instance._element) {
-                    instance.init(props);
-                    // Let the component handle its own children
-                    instance._evaluateChildComponents();
-                    VeraJS.addComponent(instance);
-                }
-
-            }else{
+            } else {
                 // Regular HTML element - recursively check its children
                 this._checkElementAndChildren(child);
             }
@@ -75,11 +88,11 @@ class Component {
     }
 
     getTemplate(){
-        throw new Error(`[Vera UIComponent Error] `+this.constructor.name+` doesnt implement the required abstract method getTemplate().`);
+        throw new Error(`[Vera UIComponent Error] ${this.constructor.name} doesn't implement the required abstract method getTemplate().`);
     }
 
     init(){
-        throw new Error(`[Vera Component Error] `+this.constructor.name+` doesnt implement the required abstract method init().`);
+        throw new Error(`[Vera Component Error] ${this.constructor.name} doesn't implement the required abstract method init().`);
     }
 
     beforeMount(){
@@ -89,8 +102,6 @@ class Component {
     getElement(){
         return this._element;
     }
-
 }
 
-window.Component = Component;
 export default Component;

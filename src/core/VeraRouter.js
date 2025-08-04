@@ -1,14 +1,14 @@
-import VeraJS from "../VeraJS";
-
 class VeraRouter {
 
     _anchorComponent;
+    _vera
 
-    constructor() {
+    constructor(vera) {
         this._routes = new Map();        // For exact routes
         this._dynamicRoutes = [];        // For :param and * routes
         this._currentMatch = null;       // Cache current match
-        this._lastUrl = null;           // Track URL changes
+        this._lastUrl = null;
+        this._vera = vera;
     }
 
     route(route, component, layout = null) {
@@ -23,8 +23,10 @@ class VeraRouter {
             // Exact route - use Map for O(1) lookup
             this._routes.set(route, {component: component, layout: layout});
         }
+
         return this;
     }
+
     _setAnchorComponent(component){
         this._anchorComponent = component;
     }
@@ -106,61 +108,67 @@ class VeraRouter {
     // Handle route changes
     _handleRouteChange() {
         const match = this.getCurrentMatch();
+
         if (match && match.component) {
             // Render the component
             this._renderComponent(match);
         }
     }
 
-
     _renderComponent(match) {
-        if (this._anchorComponent && match.component) {
-            // Generate an ID for the component
-            const componentId = crypto.randomUUID();
-
-            this._anchorComponent._element.innerHTML = '';
-
-            // CLEANUP: Remove any portaled elements that might have been created by previous routes
-            // Look for elements that have a data attribute indicating they were portaled
-            document.querySelectorAll('[data-portaled="true"]').forEach(element => {
-                element.remove();
-            });
+        try {
+            if (this._anchorComponent && match.component) {
+                // Generate an ID for the component
+                const componentId = crypto.randomUUID();
+                this._anchorComponent._element.innerHTML = '';
 
 
-            // Convert class name to tag name (Unauthorized404 -> UNAUTHORIZED-404)
-            const tagName = match.component.component.name
-                .replace(/([A-Z])/g, (match, letter, index) => {
-                    return index === 0 ? letter : '-' + letter;
-                })
-                .toUpperCase();
+                const portaledElements = document.querySelectorAll('[data-portaled="true"]');
 
-            let layoutStart = "";
-            let layoutEnd = "";
+                portaledElements.forEach(element => {
+                    element.remove();
+                });
 
-            if(match.component.layout !== null){
-                let layoutId = crypto.randomUUID();
-                let layoutName = match.component.layout.name
+                const tagName = match.component.component.name
                     .replace(/([A-Z])/g, (match, letter, index) => {
                         return index === 0 ? letter : '-' + letter;
                     })
                     .toUpperCase();
 
-                layoutStart = `<${layoutName.toLowerCase()} id="${layoutId}">`
-                layoutEnd = `</${tagName.toLowerCase()}>`;
+                let layoutStart = "";
+                let layoutEnd = "";
+
+                if (match.component.layout !== null) {
+
+                    let layoutId = crypto.randomUUID();
+                    let layoutName = match.component.layout.name
+                        .replace(/([A-Z])/g, (match, letter, index) => {
+                            return index === 0 ? letter : '-' + letter;
+                        })
+                        .toUpperCase();
+
+                    layoutStart = `<${layoutName.toLowerCase()} id="${layoutId}">`;
+                    layoutEnd = `</${layoutName.toLowerCase()}>`;
+
+                }
+                // Create the HTML
+                const componentHTML = `<${tagName.toLowerCase()} id="${componentId}"></${tagName.toLowerCase()}>`;
+                this._anchorComponent._element.innerHTML = layoutStart + componentHTML + layoutEnd;
+
+                // Let the anchor component discover and instantiate the route component
+                this._anchorComponent._evaluateChildComponents();
+                this._vera._evaluateRefs();
+
             }
-
-            // Create just the component tag - let the component system handle the template
-            this._anchorComponent._element.innerHTML = layoutStart+`<${tagName.toLowerCase()} id="${componentId}"></${tagName.toLowerCase()}>`+layoutEnd;
-
-            // Let the anchor component discover and instantiate the route component
-            this._anchorComponent._evaluateChildComponents();
-
-            VeraJS._instance._evaluateRefs();
+        } catch(err) {
+            console.error('=== RENDER ERROR ===');
+            console.error('Error:', err);
+            console.error('Error message:', err.message);
+            console.error('Error stack:', err.stack);
         }
     }
 
     start() {
-
         // Listen for browser back/forward
         window.addEventListener('popstate', () => {
             this._invalidateCache();

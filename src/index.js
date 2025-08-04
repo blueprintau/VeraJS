@@ -99,4 +99,4 @@ if (window.VeraJS) {
 }
 
 // Export for module systems
-export default VeraJSAPI;
+export { VeraJSAPI as default, VeraJSAPI };

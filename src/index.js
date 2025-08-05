@@ -5,6 +5,7 @@
 import { unwrapElement, unixToDate } from './utils/functions.js';
 import { rule } from './utils/rule.js';
 import { useCookie, setCookie, getCookie, removeCookie } from './utils/cookie.js';
+import ComponentRegistry from './ComponentRegistry.js';
 
 // Core classes
 import Component from './core/Component.js';
@@ -73,6 +74,7 @@ if (typeof window !== 'undefined') {
     window.unwrapElement = unwrapElement;
     window.unixToDate = unixToDate;
     window.Component = Component;
+    window.ComponentRegistry = ComponentRegistry;
 }
 
 // Define VeraRouterView inline AFTER VeraJS is available
@@ -99,4 +101,33 @@ if (window.VeraJS) {
 }
 
 // Export for module systems
-export { VeraJSAPI as default, VeraJSAPI };
+// Export for module systems - both default and named exports
+export default VeraJSAPI;
+
+// Named exports for individual imports
+export {
+    // Core classes
+    Component,
+    VeraRouter,
+
+    // Reactive system
+    useRef,
+    getRef,
+    useStore,
+    getStore,
+    useEffect,
+    isRef,
+
+    // Utilities
+    rule,
+    useCookie,
+    setCookie,
+    getCookie,
+    removeCookie,
+    unwrapElement,
+    unixToDate,
+
+    // Main framework reference
+    VeraJS,
+    ComponentRegistry,
+};

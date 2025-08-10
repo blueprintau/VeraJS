@@ -4,31 +4,37 @@
   "description": "A lightweight JavaScript framework for building reactive web applications",
   "main": "dist/vera.min.js",
   "module": "dist/vera.min.js",
-  "types": "dist/index.d.ts",
+  "types": "dist/vera.d.ts",
   "exports": {
     ".": {
       "import": "./dist/vera.min.js",
       "require": "./dist/vera.min.js",
-      "script": "./dist/vera.min.js"
+      "script": "./dist/vera.min.js",
+      "types": "./dist/vera.d.ts"
     },
-    "./component": {
-      "import": "./dist/vera.min.js",
-      "require": "./dist/vera.min.js"
+    "./types": {
+      "types": "./dist/vera.d.ts"
     }
   },
   "files": [
-    "dist/",
-    "src/",
+    "dist/vera.min.js",
+    "dist/vera.d.ts",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "webpack --mode=production",
+    "build": "npm run clean && npm run build:js && npm run build:types",
+    "build:js": "webpack --mode=production",
+    "build:types": "node scripts/generate-types.js",
     "build:dev": "webpack --mode=development",
     "dev": "webpack serve --mode=development",
+    "dev:with-types": "concurrently \"npm run watch\" \"npm run watch:types\"",
     "watch": "webpack --mode=development --watch",
-    "clean": "rm -rf dist/",
-    "prepublishOnly": "npm run clean && npm run build"
+    "watch:types": "nodemon --watch src --ext js --exec 'npm run build:types'",
+    "clean": "rimraf dist/ temp-types/",
+    "test:types": "tsc --noEmit dist/vera.d.ts",
+    "prepublishOnly": "npm run build",
+    "postbuild": "echo '✅ Build complete: vera.min.js and vera.d.ts generated'"
   },
   "keywords": [
     "javascript",
@@ -38,7 +44,9 @@
     "router",
     "components",
     "esm",
-    "umd"
+    "umd",
+    "typescript",
+    "jsdoc"
   ],
   "author": "Your Name",
   "license": "MIT",
@@ -57,14 +65,25 @@
     "@babel/plugin-transform-private-property-in-object": "^7.22.0",
     "@babel/preset-env": "^7.22.0",
     "babel-loader": "^9.1.0",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.0.2",
+    "rimraf": "^5.0.5",
     "terser-webpack-plugin": "^5.3.0",
+    "typescript": "^5.3.0",
     "webpack": "^5.88.0",
     "webpack-cli": "^5.1.0",
     "webpack-dev-server": "^5.2.2"
   },
   "browserslist": [
     "> 1%",
-    "last 2 versions"
+    "last 2 versions",
+    "not dead"
   ],
-  "sideEffects": false
+  "sideEffects": false,
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

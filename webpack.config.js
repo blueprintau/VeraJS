@@ -7,10 +7,7 @@ module.exports = (env, argv) => {
     return {
         entry: {
             // Main VeraJS bundle
-            vera: './src/index.js', // You'll need to create this entry point
-
-            // Optional: Separate bundle for components if you want
-            // components: './src/components/index.js'
+            vera: './src/index.js'
         },
 
         output: {
@@ -22,7 +19,7 @@ module.exports = (env, argv) => {
                 export: 'default'
             },
             globalObject: 'this',
-            clean: true // Clean dist folder on each build
+            clean: true
         },
 
         mode: isProduction ? 'production' : 'development',
@@ -35,10 +32,21 @@ module.exports = (env, argv) => {
                 new TerserPlugin({
                     terserOptions: {
                         compress: {
-                            drop_console: isProduction, // Remove console.logs in production
+                            drop_console: false,
                         },
                         mangle: {
-                            reserved: ['VeraJS', 'Component'] // Keep these names intact
+                            reserved: [
+                                'VeraJS',
+                                'Component',
+                                'VeraRouter',
+                                'useRef',
+                                'getRef',
+                                'useStore',
+                                'getStore',
+                                'useEffect',
+                                'isRef',
+                                'rule'
+                            ]
                         }
                     }
                 })
@@ -56,7 +64,7 @@ module.exports = (env, argv) => {
                             presets: [
                                 ['@babel/preset-env', {
                                     targets: {
-                                        browsers: ['> 1%', 'last 2 versions']
+                                        browsers: ['> 1%', 'last 2 versions', 'not dead']
                                     }
                                 }]
                             ]
@@ -66,8 +74,12 @@ module.exports = (env, argv) => {
             ]
         },
 
+        plugins: [
+            // No plugins needed - type generation handled by npm scripts
+        ],
+
         devServer: {
-            contentBase: path.join(__dirname, 'dist'),
+            static: path.join(__dirname, 'dist'),
             compress: true,
             port: 3000,
             hot: true,

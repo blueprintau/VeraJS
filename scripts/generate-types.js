@@ -175,6 +175,9 @@ function generateFinalDts(typeFiles) {
 
 `;
 
+    // Track which interfaces we've already defined to avoid duplicates
+    const definedInterfaces = new Set();
+
     // Extract and clean up the interface definitions from generated files
     let interfaceDefinitions = '';
 
@@ -183,19 +186,31 @@ function generateFinalDts(typeFiles) {
         const typedefMatches = content.match(/\/\*\*[\s\S]*?@typedef[\s\S]*?\*\//g);
         if (typedefMatches) {
             typedefMatches.forEach(typedef => {
-                interfaceDefinitions += convertTypedefToInterface(typedef) + '\n\n';
+                const interfaceCode = convertTypedefToInterface(typedef);
+                const interfaceName = extractInterfaceName(interfaceCode);
+
+                // Only add if we haven't defined this interface yet
+                if (interfaceCode && interfaceName && !definedInterfaces.has(interfaceName)) {
+                    interfaceDefinitions += interfaceCode + '\n\n';
+                    definedInterfaces.add(interfaceName);
+                }
             });
         }
     });
 
-    // Add standard interfaces that we always need
-    const standardInterfaces = `interface ComponentProps {
+    // Add standard interfaces that we always need (but only if not already defined)
+    const standardInterfaces = [
+        {
+            name: 'ComponentProps',
+            code: `interface ComponentProps {
   id?: string;
   innerHTML?: string;
   [key: string]: any;
-}
-
-interface VeraRef<T = any> {
+}`
+        },
+        {
+            name: 'VeraRef',
+            code: `interface VeraRef<T = any> {
   _id: string;
   _value: T;
   _observers: Array<(value: T) => void>;
@@ -206,9 +221,11 @@ interface VeraRef<T = any> {
   getValue(): T;
   setValue(value: T): void;
   addObserver(callback: (value: T) => void): void;
-}
-
-interface VeraStore<T = Record<string, any>> {
+}`
+        },
+        {
+            name: 'VeraStore',
+            code: `interface VeraStore<T = Record<string, any>> {
   _id: string;
   _name: string;
   _initialState: T;
@@ -222,16 +239,20 @@ interface VeraStore<T = Record<string, any>> {
   setState(updates: Partial<T> | ((prevState: T) => Partial<T>)): void;
   reset(newState?: T): void;
   addObserver(callback: (state: T) => void): void;
-}
-
-interface RouteMatch {
+}`
+        },
+        {
+            name: 'RouteMatch',
+            code: `interface RouteMatch {
   component: any;
   params: Record<string, string>;
   path: string;
   route?: string;
-}
-
-declare class VeraRouter {
+}`
+        },
+        {
+            name: 'VeraRouter',
+            code: `declare class VeraRouter {
   _anchorComponent: Component;
   
   route(route: string, component: any, layout?: any): this;
@@ -240,17 +261,21 @@ declare class VeraRouter {
   isCurrentRoute(routePath: string): boolean;
   navigate(path: string): void;
   start(): this;
-}
-
-interface Rule {
+}`
+        },
+        {
+            name: 'Rule',
+            code: `interface Rule {
   checks: Record<string, any>;
   min(value: number): Rule;
   max(value: number): Rule;
   regex(regex: RegExp): Rule;
   parse(value: string): boolean;
-}
-
-interface VeraJSInstance {
+}`
+        },
+        {
+            name: 'VeraJSInstance',
+            code: `interface VeraJSInstance {
   _components: Map<string, Component>;
   _registeredComponents: any[];
   _observer: any[];
@@ -267,11 +292,29 @@ interface VeraJSInstance {
   _addComponent(component: Component): void;
   whenReady(callback: () => void): void;
   setUp(callback: () => void | Promise<void>): this;
+}`
+        }
+    ];
+
+    let standardInterfaceCode = '';
+    standardInterfaces.forEach(({ name, code }) => {
+        if (!definedInterfaces.has(name)) {
+            standardInterfaceCode += code + '\n\n';
+            definedInterfaces.add(name);
+        }
+    });
+
+    return header + globalDeclarations + interfaceDefinitions + standardInterfaceCode + '\nexport {};\n';
 }
 
-`;
-
-    return header + globalDeclarations + interfaceDefinitions + standardInterfaces + '\nexport {};\n';
+/**
+ * Extract interface name from interface code
+ * @param {string} interfaceCode - TypeScript interface code
+ * @returns {string|null} Interface name or null
+ */
+function extractInterfaceName(interfaceCode) {
+    const match = interfaceCode.match(/interface\s+(\w+)/);
+    return match ? match[1] : null;
 }
 
 /**

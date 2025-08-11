@@ -122,7 +122,7 @@ class VeraJS {
         this._registeredComponents = [];
         this._observer = [];
         this._refs = [];
-        this._router = new VeraRouter();
+        this._router = new VeraRouter(this);
         this._stores = new Map();
         this._setup = ()=>{};
 

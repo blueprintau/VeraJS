@@ -116,6 +116,8 @@ class Component {
 
                 if (instance._element) {
                     instance.init(props);
+                    this._evaluateTemplateDirectives(instance);
+
                     // Let the component handle its own children
                     instance._evaluateChildComponents();
                     VeraJS.addComponent(instance);
@@ -163,6 +165,18 @@ class Component {
      */
     getElement(){
         return this._element;
+    }
+
+    _evaluateTemplateDirectives(instance){
+
+        //Process click
+        const elements = instance._element.querySelectorAll('[\\@click]');
+
+        elements.forEach(element => {
+           element.addEventListener('click', (event) => {
+               console.log("Clicked ",element," with containing attribute ",element.getAttribute('@click'));
+           })
+        });
     }
 
 }

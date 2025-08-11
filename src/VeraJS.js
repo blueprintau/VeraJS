@@ -11,11 +11,11 @@ import Component from './core/Component.js';
  * @property {Map<string, Component>} _components - Registered component instances
  * @property {Array} _registeredComponents - Array of registered component classes
  * @property {Array} _observer - Observer callbacks
- * @property {Array<ref>} _refs - Active reactive references
+ * @property {Array<VeraRef>} _refs - Active reactive references
  * @property {Array<Function>} _whenReady - Callbacks to execute when ready
  * @property {Component} _root - Root component instance
  * @property {VeraRouter} _router - Router instance
- * @property {Map<string, store>} _stores - Named stores
+ * @property {Map<string, VeraStore>} _stores - Named stores
  * @property {Function} _setup - Setup callback function
  */
 
@@ -49,7 +49,7 @@ class VeraJS {
 
     /**
      * Active reactive references
-     * @type {Array<ref>}
+     * @type {Array<VeraRef>}
      * @private
      */
     _refs;
@@ -77,7 +77,7 @@ class VeraJS {
 
     /**
      * Named stores map
-     * @type {Map<string, store>}
+     * @type {Map<string, VeraStore>}
      * @private
      */
     _stores;
@@ -204,7 +204,7 @@ class VeraJS {
     /**
      * Get a reactive reference by ID
      * @param {string} id - Reference ID
-     * @returns {ref|undefined} The reactive reference
+     * @returns {VeraRef|undefined} The reactive reference
      * @private
      */
     _getRef(id){

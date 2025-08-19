@@ -168,14 +168,20 @@ class Component {
     }
 
     _evaluateTemplateDirectives(instance){
+        // Get all elements and manually filter
+        const allElements = instance._element.querySelectorAll('*');
+        const clickElements = Array.from(allElements).filter(el => el.hasAttribute('@click'));
 
-        //Process click
-        const elements = instance._element.querySelectorAll('[\\@click]');
-
-        elements.forEach(element => {
-           element.addEventListener('click', (event) => {
-               console.log("Clicked ",element," with containing attribute ",element.getAttribute('@click'));
-           })
+        clickElements.forEach(element => {
+            const clickHandler = element.getAttribute('@click');
+            element.addEventListener('click', (event) => {
+                // Call the method on the instance
+                if (typeof instance[clickHandler] === 'function') {
+                    instance[clickHandler](event);
+                } else {
+                    throw new Error(`[VeraJS Error] Unable to call method ${clickHandler}, on object ${instance}`);
+                }
+            });
         });
     }
 

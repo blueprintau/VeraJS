@@ -13,10 +13,10 @@ class VeraRouter {
 
     route(route, component, layout = null) {
         if (route.includes(':') || route.includes('*')) {
-            // Dynamic route with parameters
+            // Dynamic route with parameters - store in same format as exact routes
             this._dynamicRoutes.push({
                 path: route,
-                component: component,
+                component: {component: component, layout: layout}, // Fixed: wrap in same format
                 regex: this._pathToRegex(route)
             });
         } else {

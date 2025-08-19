@@ -41,6 +41,8 @@ class Component {
      */
     _parent;
 
+    _children = new Map();
+
     /**
      * Get computed CSS style value for the component's element
      * @param {string} style - CSS property name
@@ -113,6 +115,7 @@ class Component {
 
                 instance._id = props.id;
                 instance._parent = this;
+                this._addChild(instance._id,instance)
 
                 if (instance._element) {
                     instance.init(props);
@@ -183,6 +186,10 @@ class Component {
                 }
             });
         });
+    }
+
+    _addChild(id,component){
+        this._children.set(id,component);
     }
 
 }

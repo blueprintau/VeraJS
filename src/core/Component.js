@@ -41,6 +41,11 @@ class Component {
      */
     _parent;
 
+    /**
+     * Array map of child elements
+     * @type {Map}
+     * @private
+     */
     _children = new Map();
 
     /**
@@ -188,8 +193,21 @@ class Component {
         });
     }
 
+    /**
+     * Private accessor used by children to add themselves to the parent.
+     * @private
+     */
     _addChild(id,component){
         this._children.set(id,component);
+    }
+
+
+    /**
+     * Retrieves a child element
+     * @returns {Component|null} Return child component object or null
+     */
+    getChild(id){
+        return this._children.get(id);
     }
 
 }

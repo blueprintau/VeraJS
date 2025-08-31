@@ -110,8 +110,13 @@ class VeraRouter {
         const match = this.getCurrentMatch();
 
         if (match && match.component) {
-            // Render the component
-            this._renderComponent(match);
+            // Check if it's a regular function (not a component class)
+            if (typeof match.component.component === "function" && !match.component.component.prototype?.getTemplate) {
+                match.component.component(); // Execute the function
+            } else {
+                // Render the component
+                this._renderComponent(match);
+            }
         }
     }
 

@@ -1,6 +1,11 @@
+import RouteGroup from '../routing/RouteGroup.js';
+import {VeraJS} from "../index.js";
 class VeraRouter {
 
+    /** @type {Component} */
     _anchorComponent;
+
+    /** @type {VeraJS} */
     _vera
 
     constructor(vera) {
@@ -11,20 +16,34 @@ class VeraRouter {
         this._vera = vera;
     }
 
-    route(route, component, layout = null) {
+    route(route, component, layout = null, middleware =[]) {
+
+        if (route !== '/' && route.endsWith('/')) {
+            route = route.slice(0, -1);
+        }
+
         if (route.includes(':') || route.includes('*')) {
             // Dynamic route with parameters - store in same format as exact routes
             this._dynamicRoutes.push({
                 path: route,
-                component: {component: component, layout: layout}, // Fixed: wrap in same format
+                component: {component: component, layout: layout, middleware: middleware}, // Fixed: wrap in same format
                 regex: this._pathToRegex(route)
             });
         } else {
             // Exact route - use Map for O(1) lookup
-            this._routes.set(route, {component: component, layout: layout});
+            this._routes.set(route, {component: component, layout: layout, middleware: middleware});
         }
 
         return this;
+    }
+
+    /**
+     * Creates a group of routes
+     * @param {string} name The name of the route group.
+     * @returns {RouteGroup} Returns a new instance of the route group object.
+     */
+    group(name){
+        return new RouteGroup(this);
     }
 
     _setAnchorComponent(component){
@@ -45,6 +64,11 @@ class VeraRouter {
     }
 
     _findMatch(path) {
+
+        if (path !== '/' && path.endsWith('/')) {
+            path = path.slice(0, -1);
+        }
+
         // Fast exact match first - O(1)
         if (this._routes.has(path)) {
             return {
@@ -110,6 +134,16 @@ class VeraRouter {
         const match = this.getCurrentMatch();
 
         if (match && match.component) {
+
+            if (match.component.middleware) {
+                for (const middleware of match.component.middleware) {
+                    let result = middleware(match);
+                    if (result === VeraJS.ABORT_MOUNT) {
+                        return;
+                    }
+                }
+            }
+
             // Check if it's a regular function (not a component class)
             if (typeof match.component.component === "function" && !match.component.component.prototype?.getTemplate) {
                 match.component.component(); // Execute the function

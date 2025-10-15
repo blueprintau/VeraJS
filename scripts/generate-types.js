@@ -129,7 +129,7 @@ try {
     fs.writeFileSync(outputPath, finalDts);
 
     // Step 6: Cleanup
-   // fs.rmSync(config.tempDir, { recursive: true, force: true });
+    fs.rmSync(config.tempDir, { recursive: true, force: true });
 
     console.log(`✅ Generated ${outputPath}`);
     console.log(`📦 File size: ${(fs.statSync(outputPath).size / 1024).toFixed(2)} KB`);
@@ -139,7 +139,7 @@ try {
 
     // Cleanup on error
     if (fs.existsSync(config.tempDir)) {
-       // fs.rmSync(config.tempDir, { recursive: true, force: true });
+        fs.rmSync(config.tempDir, { recursive: true, force: true });
     }
 
     process.exit(1);

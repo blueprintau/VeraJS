@@ -1,0 +1,248 @@
+import { beforeEach, describe, expect, test, vi } from 'vitest';
+import VeraRouter from '../src/core/VeraRouter.js';
+import {VeraJS} from "../src/index.js";
+
+// Mock global window and history objects
+global.window = {
+    location: { pathname: '/' },
+    history: {
+        pushState: vi.fn((state, title, url) => {
+            if (url) {
+                global.window.location.pathname = url;
+            }
+        }),
+        replaceState: vi.fn(),
+    },
+    addEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+};
+
+global.history = global.window.history;
+
+describe('Router', () => {
+    let router;
+    let consoleSpy;
+
+    beforeEach(() => {
+        // Reset router and mocks before each test
+        router = new VeraRouter();
+        vi.clearAllMocks();
+        global.window.location.pathname = '/';
+        consoleSpy = vi.spyOn(console, 'log');
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    })
+
+    // ============================================================================
+    // Legacy Route API Tests
+    // ============================================================================
+
+    test('should register exact route', () => {
+        const route = '/about';
+        const handler = vi.fn();
+
+        router.route(route, handler);
+
+        expect(router._routes.has(route)).toBe(true);
+    });
+
+    test('should match exact route and return correct component', () => {
+        const route = '/about';
+        const handler = vi.fn();
+
+        router.route(route, handler);
+        global.window.location.pathname = route;
+
+        const match = router.getCurrentMatch();
+
+        expect(match).not.toBeNull();
+        expect(match.component.component).toBe(handler);
+        expect(match.params).toEqual({});
+        expect(match.path).toBe(route);
+    });
+
+    test('should not match different route', () => {
+        const route = '/about';
+        const handler = vi.fn();
+
+        router.route(route, handler);
+        global.window.location.pathname = '/contact';
+
+        const match = router.getCurrentMatch();
+
+        expect(match).toBeNull();
+    });
+
+    test('should call route handler when navigating', () => {
+        const route = '/about';
+        const handler = vi.fn();
+
+        router.route(route, handler);
+        router.navigate(route);
+
+        expect(global.window.history.pushState).toHaveBeenCalledWith({}, '', route);
+        expect(global.window.location.pathname).toBe(route);
+    });
+
+    test('should handle multiple exact routes', () => {
+        router.route('/', vi.fn());
+        router.route('/about', vi.fn());
+        router.route('/contact', vi.fn());
+
+        expect(router._routes.has('/')).toBe(true);
+        expect(router._routes.has('/about')).toBe(true);
+        expect(router._routes.has('/contact')).toBe(true);
+        expect(router._routes.size).toBe(3);
+    });
+
+    test('should differentiate between similar routes', () => {
+        const aboutHandler = vi.fn();
+        const aboutUsHandler = vi.fn();
+
+        router.route('/about', aboutHandler);
+        router.route('/about-us', aboutUsHandler);
+
+        global.window.location.pathname = '/about';
+        let match = router.getCurrentMatch();
+        expect(match.component.component).toBe(aboutHandler);
+
+        global.window.location.pathname = '/about-us';
+        match = router.getCurrentMatch();
+        expect(match.component.component).toBe(aboutUsHandler);
+    });
+
+    // ============================================================================
+    // RouteGroup API Tests
+    // ============================================================================
+
+    test('should register route group', () => {
+        const route = '/about';
+
+        router.group("test")
+            .route("/about",()=>{
+                console.log("<h1>About Us</h1>")
+            });
+
+        expect(router._routes.has(route)).toBe(true);
+    });
+
+    test('route group index check passing without slash',()=>{
+        window.location.pathname= "/staff/";
+
+        const route = '/staff';
+
+        router.group("staff")
+            .prefix("/staff")
+            .route("/",()=>{
+                console.log("Staff Home page 1")
+        });
+
+        router.start();
+
+        expect(router._routes.has(route)).toBe(true);
+        expect(consoleSpy).toHaveBeenCalledWith("Staff Home page 1");
+    });
+
+
+    test('route group index check passing with slash',()=>{
+
+        window.location.pathname = "/staff/";
+
+        router.group("staff")
+            .prefix("/staff")
+            .route("/",()=>{
+                console.log("Staff Home page 2")
+            });
+
+        router.start();
+
+        expect(router._routes.has("/staff")).toBe(true);
+        expect(consoleSpy).toHaveBeenCalledWith("Staff Home page 2");
+    });
+
+
+    test('route group with single middleware as function',()=>{
+
+        window.location.pathname = "/staff/";
+
+        router.group("staff")
+            .prefix("/staff")
+            .middleware(()=>console.log("Staff is authenticated"))
+            .route("/",()=>{
+                console.log("Staff Home page");
+            });
+
+        router.start();
+
+        expect(router._routes.has("/staff")).toBe(true);
+        expect(consoleSpy).toHaveBeenCalledTimes(2);
+
+        // Check the order of calls
+        expect(consoleSpy).toHaveBeenNthCalledWith(1, "Staff is authenticated");
+        expect(consoleSpy).toHaveBeenNthCalledWith(2, "Staff Home page");
+    });
+
+    test('route group with middleware and route with middleware',()=>{
+        window.location.pathname = "/staff/add";
+
+        router.group("staff")
+            .prefix("/staff")
+            .middleware(()=>console.log("Staff is authenticated"))
+            .route("/",()=>{
+                console.log("Staff Home page");
+            })
+            .route("/add",()=>{
+                console.log("Add new staff member");
+            },{
+                middleware:()=>{
+                    console.log("You must be a manager to add new staff");
+
+                    return VeraJS.ABORT_MOUNT
+                }
+            })
+
+        router.start();
+
+        expect(router._routes.has("/staff/add")).toBe(true);
+        expect(consoleSpy).toHaveBeenCalledTimes(2);
+        expect(consoleSpy).toHaveBeenNthCalledWith(1, "Staff is authenticated");
+        expect(consoleSpy).not.toHaveBeenNthCalledWith(2,"Add new staff member");
+        expect(consoleSpy).toHaveBeenNthCalledWith(2, "You must be a manager to add new staff");
+
+    });
+
+    test('route group with middleware with abort and redirect',()=>{
+
+
+        window.location.pathname = "/dashboard";
+
+        router.group("app")
+            .route("/login",()=>{
+                console.log("Login page");
+            })
+            .route("/dashboard",()=>{
+                console.log("Dashboard page");
+            },{
+                middleware:()=>{
+                    console.log("You must be logged in to access this page.");
+                    router.navigate("/login");
+                    return VeraJS.ABORT_MOUNT
+                }
+            })
+
+        router.start();
+
+        expect(router._routes.has("/login")).toBe(true);
+        expect(router._routes.has("/dashboard")).toBe(true);
+
+        expect(consoleSpy).toHaveBeenCalledTimes(2);
+
+        expect(consoleSpy).not.toHaveBeenNthCalledWith(1, "Dashboard page");
+        expect(consoleSpy).toHaveBeenNthCalledWith(1, "You must be logged in to access this page.");
+        expect(consoleSpy).toHaveBeenNthCalledWith(2, "Login page");
+    });
+
+
+});

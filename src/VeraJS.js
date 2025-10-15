@@ -7,19 +7,6 @@ import VeraRouter from './core/VeraRouter.js';
 import Component from './core/Component.js';
 
 /**
- * @typedef {Object} VeraJSInstance
- * @property {Map<string, Component>} _components - Registered component instances
- * @property {Array} _registeredComponents - Array of registered component classes
- * @property {Array} _observer - Observer callbacks
- * @property {Array<VeraRef>} _refs - Active reactive references
- * @property {Array<Function>} _whenReady - Callbacks to execute when ready
- * @property {Component} _root - Root component instance
- * @property {VeraRouter} _router - Router instance
- * @property {Map<string, VeraStore>} _stores - Named stores
- * @property {Function} _setup - Setup callback function
- */
-
-/**
  * Main VeraJS Framework class
  * @class
  * @global

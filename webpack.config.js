@@ -1,12 +1,15 @@
-const path = require('path');
-const TerserPlugin = require('terser-webpack-plugin');
+import path from 'path';
+import { fileURLToPath } from 'url';
+import TerserPlugin from 'terser-webpack-plugin';
 
-module.exports = (env, argv) => {
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default (env, argv) => {
     const isProduction = argv.mode === 'production';
 
     return {
         entry: {
-            // Main VeraJS bundle
             vera: './src/index.js'
         },
 
@@ -74,9 +77,7 @@ module.exports = (env, argv) => {
             ]
         },
 
-        plugins: [
-            // No plugins needed - type generation handled by npm scripts
-        ],
+        plugins: [],
 
         devServer: {
             static: path.join(__dirname, 'dist'),

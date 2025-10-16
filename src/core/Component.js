@@ -153,8 +153,7 @@ class Component {
     }
 
     /**
-     * Initialize the component with properties
-     * @abstract
+     * After template is rendered and element exists in DOM
      * @param {ComponentProps} [props] - Component properties from dataset and attributes
      * @returns {void}
      */
@@ -215,6 +214,14 @@ class Component {
      */
     getChild(id){
         return this._children.get(id);
+    }
+
+    /**
+     * Retrieves a child element
+     * @returns {Component} Return the parent component object
+     */
+    getParent(){
+        return this._parent;
     }
 
 }

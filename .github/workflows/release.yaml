@@ -35,6 +35,17 @@ jobs:
         with:
           fetch-depth: 0  # Get all history for changelog
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build
+
       - name: Download coverage artifact
         uses: actions/download-artifact@v4
         with:
@@ -87,12 +98,13 @@ jobs:
             ### Changes
             See the [commit history](https://github.com/${{ github.repository }}/commits/${{ steps.build_version.outputs.tag }}) for details.
             
-            ### Coverage Report
-            📊 [View Coverage Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/coverage/)
+            ### 📊 Coverage Report
+            [View Coverage Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/coverage/)
             
-            ### Installation
-            ```bash
-            npm install verajs@${{ steps.package_version.outputs.version }}
+            ### 💿 Installation
+            **Via CDN:**
+            ```html
+            <script src="https://github.com/${{ github.repository }}/releases/download/${{ steps.build_version.outputs.tag }}/vera.min.js"></script>
             ```
           draft: false
           prerelease: false

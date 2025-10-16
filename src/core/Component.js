@@ -93,16 +93,17 @@ class Component {
 
             if (VeraJS.getComponentClasses().has(child.tagName)) {
 
+                let props = child.dataset;
+
+                props.id = child.id || props.id || crypto.randomUUID();
+                props.innerHTML = child.innerHTML;
+
                 let instance = new (VeraJS.getComponentClasses().get(child.tagName))();
-                let outcome = instance.beforeMount();
+                let outcome = instance.beforeMount(props);
 
                 if(outcome === VeraJS.ABORT_MOUNT){
                     return;
                 }
-
-                let props = child.dataset;
-                props.id = child.id || props.id || crypto.randomUUID();
-                props.innerHTML = child.innerHTML;
 
                 child.innerHTML = instance.getTemplate().replace(/\{([^}]+)}/g, (match, key) => {
                     return props[key] !== undefined ? props[key] : match;
@@ -128,6 +129,9 @@ class Component {
 
                     // Let the component handle its own children
                     instance._evaluateChildComponents();
+
+                    instance.ready(props);
+
                     VeraJS.addComponent(instance);
                 }
 
@@ -153,19 +157,22 @@ class Component {
      * @abstract
      * @param {ComponentProps} [props] - Component properties from dataset and attributes
      * @returns {void}
-     * @throws {Error} When not implemented by subclass
      */
-    init(props){
-        throw new Error(`[Vera Component Error] `+this.constructor.name+` doesnt implement the required abstract method init().`);
-    }
+    init(props){}
 
     /**
      * Optional lifecycle method called before component mounts
+     * @param {ComponentProps} [props] - Component properties from dataset and attributes
      * @returns {void|Symbol} Return VeraJS.ABORT_MOUNT to prevent mounting
      */
-    beforeMount(){
-        //Optional abstract method
-    }
+    beforeMount(props){}
+
+    /**
+     * Optional lifecycle method called once the component and all its children are ready
+     * @param {ComponentProps} [props] - Component properties from dataset and attributes
+     * @returns {void}
+     */
+    ready(props){}
 
     /**
      * Get the component's DOM element

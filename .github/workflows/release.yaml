@@ -1,0 +1,76 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+    with:
+      coverage: true
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Get all history for changelog
+
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Deploy coverage to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./coverage
+          destination_dir: coverage
+
+      - name: Get version from package.json
+        id: package_version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists
+        id: check_tag
+        run: |
+          if git rev-parse "v${{ steps.package_version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.package_version.outputs.version }}
+          release_name: Release v${{ steps.package_version.outputs.version }}
+          body: |
+            ## VeraJS v${{ steps.package_version.outputs.version }}
+            
+            ### Changes
+            See the [commit history](https://github.com/${{ github.repository }}/commits/v${{ steps.package_version.outputs.version }}) for details.
+            
+            ### Coverage Report
+            📊 [View Coverage Report](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/coverage/)
+            
+            ### Installation
+            ```bash
+            npm install verajs@${{ steps.package_version.outputs.version }}
+            ```
+          draft: false
+          prerelease: false
+
+      - name: Skip Release (already exists)
+        if: steps.check_tag.outputs.exists == 'true'
+        run: echo "Release v${{ steps.package_version.outputs.version }} already exists. Skipping release creation."

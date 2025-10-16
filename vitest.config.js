@@ -6,7 +6,7 @@ export default defineConfig({
         globals: true, // Makes describe, it, expect available globally
         coverage: {
             provider: 'v8', // or 'istanbul'
-            reporter: ['text', 'html', 'json']
+            reporter: ['text', 'html', 'json', 'json-summary']
         }
     }
 });

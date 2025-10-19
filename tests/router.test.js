@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import VeraRouter from '../src/core/VeraRouter.js';
-import {VeraJS} from "../src/index.js";
+import Router from '../src/routing/Router.js';
+import VeraJS from "../src/index.js";
 
 // Mock global window and history objects
 global.window = {
@@ -25,7 +25,7 @@ describe('Router', () => {
 
     beforeEach(() => {
         // Reset router and mocks before each test
-        router = new VeraRouter();
+        router = new Router();
         vi.clearAllMocks();
         global.window.location.pathname = '/';
         consoleSpy = vi.spyOn(console, 'log');
@@ -210,7 +210,6 @@ describe('Router', () => {
         expect(consoleSpy).toHaveBeenNthCalledWith(1, "Staff is authenticated");
         expect(consoleSpy).not.toHaveBeenNthCalledWith(2,"Add new staff member");
         expect(consoleSpy).toHaveBeenNthCalledWith(2, "You must be a manager to add new staff");
-
     });
 
     test('route group with middleware with abort and redirect',()=>{

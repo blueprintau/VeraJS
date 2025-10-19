@@ -1,5 +1,4 @@
 // VeraJS Framework Entry Point
-import './types.js';
 
 // Utilities
 import { unwrapElement, unixToDate } from './utils/functions.js';

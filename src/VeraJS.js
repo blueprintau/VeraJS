@@ -3,7 +3,6 @@
  * @version 1.0.0
  */
 
-import './types.js';
 import Router from './routing/Router.js';
 import Component from './Component.js';
 import { unwrapElement } from './utils/functions.js';

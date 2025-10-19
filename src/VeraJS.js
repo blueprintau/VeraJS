@@ -3,8 +3,11 @@
  * @version 1.0.0
  */
 
-import VeraRouter from './core/VeraRouter.js';
-import Component from './core/Component.js';
+import Router from './routing/Router.js';
+import Component from './Component.js';
+import { unwrapElement } from './utils/functions.js';
+import Ref from './reactive/Ref.js';
+import Store from './reactive/Store.js';
 
 /**
  * Main VeraJS Framework class
@@ -36,7 +39,7 @@ class VeraJS {
 
     /**
      * Active reactive references
-     * @type {Array<VeraRef>}
+     * @type {Array<Ref|Store>}
      * @private
      */
     _refs;
@@ -51,20 +54,20 @@ class VeraJS {
     /**
      * Root component instance
      * @type {Component}
-     * @private
+     * @internal
      */
-    _root;
+    root;
 
     /**
      * Router instance
-     * @type {VeraRouter}
+     * @type {Router}
      * @private
      */
     _router;
 
     /**
      * Named stores map
-     * @type {Map<string, VeraStore>}
+     * @type {Map<string, Store>}
      * @private
      */
     _stores;
@@ -109,22 +112,24 @@ class VeraJS {
         this._registeredComponents = [];
         this._observer = [];
         this._refs = [];
-        this._router = new VeraRouter(this);
+        this._router = new Router(this);
         this._stores = new Map();
         this._setup = ()=>{};
 
         try {
             let root = new Component();
+            // @ts-ignore
             root._element = document.getElementById(id);
             root.getElement().classList.add('vera-root');
-            this._root = root;
+            this.root = root;
+            this._router.setAnchorComponent(this.root);
         }catch (error) {
             throw new Error(`[Vera Error] Unable to mount app to `+id+` it doesnt exist in the DOM.`);
         }
 
         document.addEventListener("DOMContentLoaded", async () => {
             await this._setup();
-            this._root._evaluateChildComponents();
+            this.root.evaluateChildComponents();
             this._whenReady.forEach((item) => {
                 item();
             });
@@ -135,19 +140,25 @@ class VeraJS {
     /**
      * Evaluate reactive references in the DOM
      * @param {HTMLElement} [selector] - Element to scan, defaults to root
-     * @private
+     * @internal;
      */
     _evaluateRefs(selector = null){
         if(selector === null){
-            selector = this._root.getElement();
+            selector = this.root.getElement();
         }
 
         selector.querySelectorAll('*').forEach((element)=> {
+
+            if (!(element instanceof HTMLElement)) return;
+
+
             let ref = element.getAttribute('@ref');
 
             if(ref) {
                 try {
-                    ref = VeraJS._instance._getRef(ref);
+                    // @ts-ignore
+                    ref = VeraJS.getRef(ref);
+                    // @ts-ignore
                     ref.addObserver((value)=>{
                         element.innerText = value;
                     });
@@ -164,6 +175,7 @@ class VeraJS {
                 let targetContainer = eval(cleanPortal);
 
                 Array.from(element.children).forEach(child => {
+                    // @ts-ignore
                     child.dataset.portaled = "true";
                 });
 
@@ -174,14 +186,13 @@ class VeraJS {
                 }
 
                 unwrapElement(element);
-                console.log("Moved and unwrapped " + portal, element);
             }
         });
     }
 
     /**
      * Add a reactive reference to the framework
-     * @param {ref} VeraRef - Reactive reference to add
+     * @param {Ref|Store} ref - Reactive reference to add
      * @private
      */
     _addRef(ref){
@@ -191,11 +202,15 @@ class VeraJS {
     /**
      * Get a reactive reference by ID
      * @param {string} id - Reference ID
-     * @returns {VeraRef|undefined} The reactive reference
+     * @returns {Ref|undefined} The reactive reference
      * @private
      */
     _getRef(id){
-        return this._refs.find((ref) => ref._id === id);
+        let ref = this._refs.find((ref) => ref._id === id);
+        if(ref instanceof Ref){
+            return ref;
+        }
+        return undefined;
     }
 
     /**
@@ -204,7 +219,7 @@ class VeraJS {
      * @private
      */
     _addComponent(component){
-        this._components.set(component.id, component);
+        this._components.set(component.getId(), component);
     }
 
     /**
@@ -258,7 +273,7 @@ class VeraJS {
 
     /**
      * Get the router instance
-     * @returns {VeraRouter} Router instance
+     * @returns {Router} Router instance
      * @static
      */
     static router(){
@@ -272,6 +287,46 @@ class VeraJS {
      */
     static getComponentClasses() {
         return VeraJS._componentClasses;
+    }
+
+    /**
+     * Adds a new ref
+     * @static
+     * @param {Ref|Store} ref
+     */
+    static addRef(ref){
+       VeraJS._instance._addRef(ref);
+    }
+
+    /**
+     * Returns a ref by id
+     * @static
+     * @returns {Ref} VeraJS Ref
+     * @param {string} id
+     */
+    static getRef(id){
+        return VeraJS._instance._getRef(id);
+    }
+
+    /**
+     * Adds a new store
+     * @param {string} name
+     * @param {Store} store
+     * @static
+     */
+    static addStore(name,store){
+        VeraJS._instance._addRef(store);
+        VeraJS._instance._stores.set(name, store);
+    }
+
+    /**
+     * Returns a store by name
+     * @static
+     * @param {string} name
+     * @returns {Store|null} VeraJS Ref
+     */
+    static getStore(name){
+        return VeraJS._instance._stores.get(name) ?? null;
     }
 
 }

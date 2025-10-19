@@ -9,20 +9,19 @@ export default (env, argv) => {
     const isProduction = argv.mode === 'production';
 
     return {
-        entry: {
-            vera: './src/index.js'
+        entry: './src/index.js',
+
+        experiments: {
+            outputModule: true, // Enable ESM output
         },
 
         output: {
+            filename: 'vera.min.js',
             path: path.resolve(__dirname, 'dist'),
-            filename: isProduction ? '[name].min.js' : '[name].js',
             library: {
-                name: 'VeraJS',
-                type: 'umd',
-                export: 'default'
+                type: 'module', // ESM instead of UMD
             },
-            globalObject: 'this',
-            clean: true
+            module: true, // Mark as ES module
         },
 
         mode: isProduction ? 'production' : 'development',
@@ -41,7 +40,7 @@ export default (env, argv) => {
                             reserved: [
                                 'VeraJS',
                                 'Component',
-                                'VeraRouter',
+                                'Router',
                                 'useRef',
                                 'getRef',
                                 'useStore',
@@ -67,8 +66,9 @@ export default (env, argv) => {
                             presets: [
                                 ['@babel/preset-env', {
                                     targets: {
-                                        browsers: ['> 1%', 'last 2 versions', 'not dead']
-                                    }
+                                        esmodules: true // Only target browsers with ESM support
+                                    },
+                                    modules: false // Don't transform ES modules
                                 }]
                             ]
                         }

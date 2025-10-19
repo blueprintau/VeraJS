@@ -195,7 +195,7 @@ class Router {
 
         // CASE 1: No layout needed
         if (newLayout === null || !Component.isPrototypeOf(newLayout)) {
-            console.log("CASE 1")
+            //console.log("CASE 1")
             let html =  `<${tagName.toLowerCase()} id="${id}"></${tagName.toLowerCase()}>`;
             this._renderComponent(this._anchorComponent,html);
             this._currentLayout = null;
@@ -204,7 +204,7 @@ class Router {
 
         // CASE 2: Same layout - just replace content inside layout
         if (newLayout === this._currentLayout) {
-            console.log("CASE 2")
+           // console.log("CASE 2")
 
             let html = `<${tagName.toLowerCase()} id="${id}"></${tagName.toLowerCase()}>`;
             let layoutComponent = this._anchorComponent.getChildren().values().next().value;
@@ -235,7 +235,7 @@ class Router {
             return;
         }
 
-        console.log("CASE 3")
+       // console.log("CASE 3")
         // CASE 3: New/different layout - recreate everything (this clears layout portals too)
         const layoutId = crypto.randomUUID();
 

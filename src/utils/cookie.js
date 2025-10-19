@@ -3,6 +3,8 @@
  * @version 1.0.0
  */
 
+import { useRef } from "../ref";
+
 /**
  * @typedef {Object} CookieRef
  * @property {string} _id - Unique identifier for the ref
@@ -129,7 +131,7 @@ function getCookie(name, defaultValue = null) {
 /**
  * Removes a cookie by setting its expiration to the past
  * @param {string} name - Cookie name to remove
- * @param {CookieOptions} [options={}] - Cookie options
+ * @param {Object} [options={}] - Cookie options
  * @param {string} [options.path='/'] - Cookie path (must match the path used when setting)
  * @param {string} [options.domain] - Cookie domain (must match the domain used when setting)
  * @returns {void}

@@ -1,55 +1,55 @@
+/**
+ * @fileoverview Reactive store utilities for VeraJS framework
+ * @module store
+ */
+
+import Store from './reactive/Store.js';
 import VeraJS from './VeraJS.js';
 
+/**
+ * Creates or retrieves a reactive store for managing application state
+ * @param {string} name - Unique name for the store
+ * @param {Object} [initialState={}] - Initial state object
+ * @returns {Store} Reactive store object
+ * @example
+ * // Create a new store
+ * const userStore = useStore('user', {
+ *     name: 'John',
+ *     age: 30
+ * });
+ *
+ * // Update state
+ * userStore.setState({ age: 31 });
+ *
+ * // Get specific state value
+ * console.log(userStore.getState('name')); // 'John'
+ *
+ * // Reset to initial state
+ * userStore.reset();
+ */
 function useStore(name, initialState = {}) {
-    // Check if the store already exists
-    if (VeraJS._instance._stores.has(name)) {
+    if (VeraJS.getStore(name) !== null) {
         console.warn(`Store '${name}' already exists. Returning existing store.`);
-        return VeraJS._instance._stores.get(name)
+        return VeraJS.getStore(name);
     }
 
-    const store = {
-        _id: crypto.randomUUID(),
-        _name: name,
-        _initialState: { ...initialState },
-        _state: { ...initialState },
-        _observers: [],
-        _ref: true,
-        _store: true,
-
-        getState(key) {
-            return key ? this._state[key] : { ...this._state };
-        },
-
-        setState(updates) {
-            if (typeof updates === 'function') {
-                updates = updates(this._state);
-            }
-
-            //const prevState = { ...this._state };
-            this._state = { ...this._state, ...updates };
-            this._observers.forEach(observer => observer(this._state));
-        },
-
-        // Reset method - rolls back to initial state if no argument provided
-        reset(newState = null) {
-            // If no newState provided, use the original initial state
-            this._state = newState ? { ...newState } : { ...this._initialState };
-            this._observers.forEach(observer => observer(this._state));
-        },
-
-        addObserver(callback) {
-            this._observers.push(callback);
-        }
-    };
-
-    VeraJS._instance._addRef(store);
-    VeraJS._instance._stores.set(name, store);
+    const store = new Store(name, initialState);
+    VeraJS.addStore(name, store);
     return store;
 }
 
-// GET existing stores (different name for retrieval)
+/**
+ * Retrieves an existing store by name
+ * @param {string} name - Store name to retrieve
+ * @returns {Store|null} The store object or null if not found
+ * @example
+ * const userStore = getStore('user');
+ * if (userStore) {
+ *     console.log(userStore.getState());
+ * }
+ */
 function getStore(name) {
-    return VeraJS._instance._stores.get(name) || null;
+    return VeraJS.getStore(name) || null;
 }
 
 export { useStore, getStore };

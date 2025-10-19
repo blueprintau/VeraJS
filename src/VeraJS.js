@@ -323,10 +323,10 @@ class VeraJS {
      * Returns a store by name
      * @static
      * @param {string} name
-     * @returns {Store} VeraJS Ref
+     * @returns {Store|null} VeraJS Ref
      */
     static getStore(name){
-        return VeraJS._instance._stores.get(name);
+        return VeraJS._instance._stores.get(name) ?? null;
     }
 
 }

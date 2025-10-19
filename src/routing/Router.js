@@ -99,14 +99,18 @@ class Router {
             }
         }
 
-        console.warn("[VeraRouter] No route found '" + path + "'");
-
+        // Return 404 route match instead of navigating
         if (this._routes.has("/404")) {
-            this.navigate("/404");
-            //console.log("404 redirect triggered!")
+            return {
+                component: this._routes.get("/404"),
+                params: {},
+                path: path,  // Keep the original path that failed
+                is404: true  // Optional flag to indicate this is a 404
+            };
         }
 
-        return null;
+        // Strict mode - no 404 route defined
+        throw new Error(`[VeraRouter] No route found for "${path}" and no 404 handler is registered. Register a /404 route to handle missing pages.`);
     }
 
     // Quick boolean checks

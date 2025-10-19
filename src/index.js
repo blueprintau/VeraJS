@@ -3,7 +3,6 @@
 // Utilities
 import { unwrapElement, unixToDate } from './utils/functions.js';
 import { useCookie, setCookie, getCookie, removeCookie } from './utils/cookie.js';
-import ComponentRegistry from './ComponentRegistry.js';
 
 // Core classes
 import Component from './Component.js';
@@ -25,9 +24,7 @@ VeraJS.registerComponentClass("VERA-ROUTER-VIEW", RouterView);
 Object.assign(VeraJS, {
     // Classes
     Component,
-    VeraRouter: Router,
-    ComponentRegistry,
-
+    Router: Router,
     // Reactive system
     useRef,
     getRef,
@@ -53,8 +50,6 @@ export {
     // Core classes
     Component,
     Router,
-    ComponentRegistry,
-
     // Reactive system
     useRef,
     getRef,

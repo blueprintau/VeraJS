@@ -186,7 +186,6 @@ class VeraJS {
                 }
 
                 unwrapElement(element);
-                console.log("Moved and unwrapped " + portal, element);
             }
         });
     }

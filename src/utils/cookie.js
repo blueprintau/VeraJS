@@ -3,7 +3,7 @@
  * @version 1.0.0
  */
 
-import { useRef } from "../ref";
+import { useRef } from "../ref.js";
 
 /**
  * @typedef {Object} CookieRef

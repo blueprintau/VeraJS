@@ -3,6 +3,9 @@
  * @version 1.0.0
  */
 
+import Router from './Router.js';
+import Component from "../Component.js";
+
 /**
  * @typedef {Object} RouteOptions
  * @property {typeof Component} [layout] - Layout component (overrides group layout)
@@ -38,14 +41,14 @@ class RouteGroup {
 
     /**
      * Reference to the parent router instance
-     * @type {VeraRouter}
+     * @type {Router}
      * @private
      */
     _router;
 
     /**
      * Create a new RouteGroup
-     * @param {VeraRouter} router - The parent router instance
+     * @param {Router} router - The parent router instance
      */
     constructor(router){
         this._router = router;

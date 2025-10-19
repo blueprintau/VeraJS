@@ -3,8 +3,8 @@
  * @version 1.0.0
  */
 
-import VeraJS from '../VeraJS.js';
-import { unwrapElement } from '../utils/functions.js';
+import VeraJS from './VeraJS.js';
+import { unwrapElement } from './utils/functions.js';
 
 /**
  * @typedef {Object} ComponentProps
@@ -21,18 +21,18 @@ import { unwrapElement } from '../utils/functions.js';
 class Component {
 
     /**
+     * Component's ID
+     * @type {string}
+     * @private
+     */
+    _id;
+
+    /**
      * Component's DOM element
      * @type {HTMLElement}
      * @private
      */
     _element;
-
-    /**
-     * Component's unique ID
-     * @type {string}
-     * @private
-     */
-    _id;
 
     /**
      * Parent component reference
@@ -62,23 +62,28 @@ class Component {
     }
 
     /**
-     * Query for elements within this component
+     * Query for a single element within this component
      * @param {string} selector - CSS selector
-     * @param {boolean} [all=false] - Whether to return all matches
      * @returns {Element|NodeListOf<Element>|null} Found element(s)
      */
-    querySelector(selector, all=false){
-        if(all){
-            return this._element.querySelectorAll(selector);
-        }
+    querySelector(selector){
         return this._element.querySelector(selector);
     }
 
     /**
-     * Evaluate and instantiate child components
-     * @private
+     * Query for elements within this component
+     * @param {string} selector - CSS selector
+     * @returns {Element|NodeListOf<Element>|null} Found element(s)
      */
-    _evaluateChildComponents(){
+    querySelectorAll(selector){
+        return this._element.querySelectorAll(selector);
+    }
+
+    /**
+     * Evaluate and instantiate child components
+     * @internal
+     */
+    evaluateChildComponents(){
         this._checkElementAndChildren(this._element);
     }
 
@@ -90,6 +95,8 @@ class Component {
     _checkElementAndChildren(element) {
         // Check all direct children of this element
         Array.from(element.children).forEach(child => {
+
+            if (!(child instanceof HTMLElement)) return;
 
             if (VeraJS.getComponentClasses().has(child.tagName)) {
 
@@ -128,7 +135,7 @@ class Component {
                     this._evaluateTemplateDirectives(instance);
 
                     // Let the component handle its own children
-                    instance._evaluateChildComponents();
+                    instance.evaluateChildComponents();
 
                     instance.ready(props);
 
@@ -157,21 +164,21 @@ class Component {
      * @param {ComponentProps} [props] - Component properties from dataset and attributes
      * @returns {void}
      */
-    init(props){}
+    init(props = {}){}
 
     /**
      * Optional lifecycle method called before component mounts
      * @param {ComponentProps} [props] - Component properties from dataset and attributes
      * @returns {void|Symbol} Return VeraJS.ABORT_MOUNT to prevent mounting
      */
-    beforeMount(props){}
+    beforeMount(props = {}){}
 
     /**
      * Optional lifecycle method called once the component and all its children are ready
      * @param {ComponentProps} [props] - Component properties from dataset and attributes
      * @returns {void}
      */
-    ready(props){}
+    ready(props = {}){}
 
     /**
      * Get the component's DOM element
@@ -180,6 +187,7 @@ class Component {
     getElement(){
         return this._element;
     }
+
 
     _evaluateTemplateDirectives(instance){
         // Get all elements and manually filter
@@ -201,7 +209,8 @@ class Component {
 
     /**
      * Private accessor used by children to add themselves to the parent.
-     * @private
+     * @param {string} id
+     * @param {Component} component
      */
     _addChild(id,component){
         this._children.set(id,component);
@@ -210,10 +219,19 @@ class Component {
 
     /**
      * Retrieves a child element
+     * @param {string} id
      * @returns {Component|null} Return child component object or null
      */
     getChild(id){
         return this._children.get(id);
+    }
+
+    /**
+     * Retrieves a child element
+     * @returns {Map<String, Component>} Return the parent component object
+     */
+    getChildren(){
+        return this._children;
     }
 
     /**
@@ -224,8 +242,23 @@ class Component {
         return this._parent;
     }
 
+    /**
+     * Returns the ID of the component
+     * @returns {String} Return the parent component object
+     */
+    getId(){
+        return this._element.id;
+    }
+
+    /**
+     * Set the parent component
+     * @param {Component|null} parent - The parent component or null
+     * @returns {void}
+     */
+    setParent(parent){
+        this._parent = parent;
+    }
+
 }
 
-// Make Component available globally for component inheritance
-window.Component = Component;
 export default Component;

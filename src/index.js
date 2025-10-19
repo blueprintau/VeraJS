@@ -16,31 +16,8 @@ import { useStore, getStore } from './store.js';
 import VeraJS from './VeraJS.js';
 import RouterView from "./routing/RouterView.js";
 
-
 // Register VeraRouterView
 VeraJS.registerComponentClass("VERA-ROUTER-VIEW", RouterView);
-
-// Extend VeraJS with all framework utilities and classes
-Object.assign(VeraJS, {
-    // Classes
-    Component,
-    Router: Router,
-    // Reactive system
-    useRef,
-    getRef,
-    useStore,
-    getStore,
-    useEffect,
-    isRef,
-
-    // Utilities
-    useCookie,
-    setCookie,
-    getCookie,
-    removeCookie,
-    unwrapElement,
-    unixToDate,
-});
 
 // Export default
 export default VeraJS;
@@ -50,6 +27,8 @@ export {
     // Core classes
     Component,
     Router,
+    RouterView,
+
     // Reactive system
     useRef,
     getRef,

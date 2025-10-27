@@ -123,7 +123,7 @@ class Router {
         return new RegExp(
             '^' + path
                 .replace(/\//g, '\\/')
-                .replace(/:([^/]+)/g, '(?<$1>[^/]+)')
+                .replace(/:(\w+)/g, '(?<$1>[^/]+)')
                 .replace(/\*/g, '.*') + '$'
         );
     }
@@ -189,6 +189,7 @@ class Router {
         }
 
         const id = crypto.randomUUID();
+
         const tagName = match.component.component.name
             .replace(/([A-Z])/g, (match, letter, index) => {
                 return index === 0 ? letter : '-' + letter;

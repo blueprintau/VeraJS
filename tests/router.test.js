@@ -279,6 +279,32 @@ describe('Router', () => {
 
     });
 
+
+    test('route group with two route parameter',()=>{
+
+
+        window.location.pathname = "/event/1/talk/123";
+
+        let eventPage = function (){
+            console.log("user page page");
+        };
+
+        router
+            .group()
+            .prefix("/event/:id")
+            .route("/talk/:talkId",eventPage);
+
+        router.start();
+
+        let match = router.getCurrentMatch();
+
+        expect(match.path).toEqual("/event/1/talk/123");
+        expect(match.route).toEqual("/event/:id/talk/:talkId");
+        expect(match.params).toEqual({id: '1',talkId:'123'});
+
+    });
+
+
     test('route invalid route with no defined 404 page',()=>{
 
         window.location.pathname = "/user/123";

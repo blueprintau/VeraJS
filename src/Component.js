@@ -43,7 +43,7 @@ class Component {
 
     /**
      * Array map of child elements
-     * @type {Map}
+     * @type {Map<string,Component>}
      * @private
      */
     _children = new Map();

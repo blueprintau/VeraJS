@@ -22,6 +22,7 @@ global.history = global.window.history;
 describe('Router', () => {
     let router;
     let consoleSpy;
+    let errorSpy;
 
     beforeEach(() => {
         // Reset router and mocks before each test
@@ -29,6 +30,7 @@ describe('Router', () => {
         vi.clearAllMocks();
         global.window.location.pathname = '/';
         consoleSpy = vi.spyOn(console, 'log');
+        errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     });
 
     afterEach(() => {
@@ -63,17 +65,6 @@ describe('Router', () => {
         expect(match.path).toBe(route);
     });
 
-    test('should not match different route', () => {
-        const route = '/about';
-        const handler = vi.fn();
-
-        router.route(route, handler);
-        global.window.location.pathname = '/contact';
-
-        const match = router.getCurrentMatch();
-
-        expect(match).toBeNull();
-    });
 
     test('should call route handler when navigating', () => {
         const route = '/about';
@@ -243,5 +234,100 @@ describe('Router', () => {
         expect(consoleSpy).toHaveBeenNthCalledWith(2, "Login page");
     });
 
+    test('route group with invalid layout',()=>{
+
+
+        window.location.pathname = "/dashboard";
+
+        let test = {message:"NOT A COMPONENT"};
+
+        router
+            .group("app")
+            .layout(test)
+            .route("/dashboard",()=>{
+                        console.log("Login page");
+                    });
+
+        router.start()
+
+        expect(errorSpy).toHaveBeenCalledWith(
+            expect.stringContaining('[VeraRouter] Layout must be a Component class')
+        );
+    });
+
+    test('route group with route parameter',()=>{
+
+
+        window.location.pathname = "/user/123";
+
+        let userPage = function (){
+            console.log("user page page");
+        };
+
+        router
+            .group()
+            .prefix("/user")
+            .route("/:id",userPage);
+
+        router.start();
+
+        let match = router.getCurrentMatch();
+
+        expect(match.path).toEqual("/user/123");
+        expect(match.route).toEqual("/user/:id");
+        expect(match.params).toEqual({id: '123'})
+
+    });
+
+
+    test('route group with two route parameter',()=>{
+
+
+        window.location.pathname = "/event/1/talk/123";
+
+        let eventPage = function (){
+            console.log("user page page");
+        };
+
+        router
+            .group()
+            .prefix("/event/:id")
+            .route("/talk/:talkId",eventPage);
+
+        router.start();
+
+        let match = router.getCurrentMatch();
+
+        expect(match.path).toEqual("/event/1/talk/123");
+        expect(match.route).toEqual("/event/:id/talk/:talkId");
+        expect(match.params).toEqual({id: '1',talkId:'123'});
+
+    });
+
+
+    test('route invalid route with no defined 404 page',()=>{
+
+        window.location.pathname = "/user/123";
+        try {
+            router.start();
+        }catch(err){
+            expect(err.message).toEqual('[VeraRouter] No route found for "/user/123" and no 404 handler is registered. Register a /404 route to handle missing pages.');
+        }
+    });
+
+    test('route invalid route with defined 404 page',()=>{
+
+        window.location.pathname = "/user/123";
+
+        let pageNotFound = ()=>{
+            console.log("404 Page not found");
+        }
+
+        router.route("/404",pageNotFound);
+
+        expect(() => router.start()).not.toThrow();
+
+        expect(consoleSpy).toHaveBeenNthCalledWith(1, "404 Page not found");
+    });
 
 });

@@ -159,6 +159,54 @@ class Component {
         throw new Error(`[Vera UIComponent Error] `+this.constructor.name+` doesnt implement the required abstract method getTemplate().`);
     }
 
+
+
+    /**
+     * Programmatically create and mount a child component
+     * @param {typeof Component} componentClass - The component class to instantiate
+     * @param {Object} [props={}] - Props to pass to the component as data attributes
+     * @param {HTMLElement} [targetElement=this._element] - Container element
+     * @returns {Component} The instantiated component instance
+     */
+    addComponent(componentClass, props = {}, targetElement = this._element) {
+        // Get the tag name
+        let tagName = componentClass.name
+            .replace(/([a-z])([A-Z])/g, '$1-$2')
+            .toUpperCase();
+
+        // Register component if not already registered
+        if (!VeraJS.getComponentClasses().has(tagName)) {
+            VeraJS.registerComponentClass(tagName, componentClass);
+        }
+
+        // Generate ID if not provided
+        const id = props.id || crypto.randomUUID();
+
+        // Build data attributes string for HTML
+        let dataAttrs = '';
+        Object.keys(props).forEach(key => {
+            if (key !== 'id' && key !== 'innerHTML') {
+                // Escape quotes in attribute values
+                const value = String(props[key]).replace(/"/g, '&quot;');
+                dataAttrs += ` data-${key}="${value}"`;
+            }
+        });
+
+        // Get innerHTML if provided
+        const innerHTML = props.innerHTML || '';
+
+        // Create the element HTML string with data attributes
+        const elementHTML = `<${tagName.toLowerCase()} id="${id}"${dataAttrs}>${innerHTML}</${tagName.toLowerCase()}>`;
+
+        // Insert into DOM
+        targetElement.insertAdjacentHTML('beforeend', elementHTML);
+
+        // Evaluate to instantiate the component
+        this.evaluateChildComponents();
+
+        // Return the component instance
+        return this.getChild(id);
+    }
     /**
      * After template is rendered and element exists in DOM
      * @param {ComponentProps} [props] - Component properties from dataset and attributes

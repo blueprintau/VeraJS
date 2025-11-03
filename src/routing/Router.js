@@ -215,9 +215,7 @@ class Router {
             let layoutComponent = this._anchorComponent.getChildren().values().next().value;
 
             // Find the slot element
-            const slotElement = layoutComponent.getElement().getAttribute("data-slot") === "innerHTML"
-                ? layoutComponent.getElement()
-                : layoutComponent.getElement().querySelector('[data-slot="innerHTML"]');
+            const slotElement = this._findSlotElement(layoutComponent.getElement(), "innerHTML");
 
             if (slotElement) {
                 // Find the old page component inside the slot
@@ -265,13 +263,17 @@ class Router {
         this._removedPortalElements(target);
 
         if(slot !== null) {
+            // Use helper method to find slot, skipping VeraJS components
+            let slotElement = this._findSlotElement(target.getElement(), slot);
 
-            if(target.getElement().getAttribute("data-slot") === "innerHTML"){
-                target.innerHTML = html;
-            }else {
-                target.getElement().querySelector(`[data-slot="${slot}"]`).innerHTML = html;
+            if(!slotElement) {
+                console.error(`[VeraJS.Router] Slot "${slot}" not found on a valid HTML element`, target);
             }
+
+            slotElement.innerHTML = html;
+
         }else{
+            //Else if we dont have a slot then replace the full html
             target.getElement().innerHTML = html;
         }
 
@@ -297,6 +299,44 @@ class Router {
         });
     }
 
+    /**
+     * Removes all the portaled elements belonging to a component, or its children.
+     * @param {Element} rootElement
+     * @param {String} slotName
+     * @private
+     */
+    _findSlotElement(rootElement, slotName) {
+        // Check if root element itself is the slot
+        if (rootElement.getAttribute("data-slot") === slotName) {
+            return rootElement;
+        }
+
+        // Iterate through all direct children
+        for (const child of Array.from(rootElement.children)) {
+            const tagName = child.tagName.toUpperCase();
+
+            // If this is a VeraJS component, skip it entirely (don't search inside)
+            // The 'continue' moves to the next sibling in the loop
+            if (VeraJS.getComponentClasses().has(tagName)) {
+                continue; // Skip to next sibling
+            }
+
+            // This child is a standard HTML element, check if it's our slot
+            if (child.getAttribute("data-slot") === slotName) {
+                return child;
+            }
+
+            // Not the slot we want, recursively search THIS child's descendants
+            // (only standard HTML elements reach this point due to continue above)
+            const found = this._findSlotElement(child, slotName);
+            if (found) {
+                return found;
+            }
+
+        }
+
+        return null;
+    }
 
     start() {
         // Listen for browser back/forward
@@ -310,6 +350,8 @@ class Router {
 
         return this;
     }
+
+
 }
 
 export default Router;

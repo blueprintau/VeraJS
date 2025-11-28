@@ -329,6 +329,15 @@ class VeraJS {
         return VeraJS._instance._stores.get(name) ?? null;
     }
 
+    /**
+     * Returns the current VeraJS instance
+     * @static
+     * @returns {VeraJS} VeraJS Ref
+     */
+    static getInstance(){
+        return VeraJS._instance;
+    }
+
 }
 
 export default VeraJS;

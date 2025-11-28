@@ -159,6 +159,82 @@ class Component {
         throw new Error(`[Vera UIComponent Error] `+this.constructor.name+` doesnt implement the required abstract method getTemplate().`);
     }
 
+    /**
+     * @param {String} name The name of the slot we are trying to retrieve
+     * @returns {HTMLElement|null} Returns the slots HTMLElement.
+     */
+    getSlot(name){
+        // First check if this element itself is the slot
+        if (this._element.getAttribute('data-slot') === name) {
+            return this._element;
+        }
+
+        // Recursively search for the slot
+        return this._findSlotElement(this._element, name);
+    }
+
+    /**
+     * Finds a slot element within the component's DOM tree
+     * @param {HTMLElement} rootElement
+     * @param {String} slotName
+     * @returns {HTMLElement|null}
+     * @private
+     */
+    _findSlotElement(rootElement, slotName) {
+        // Check all child elements (not components in _children Map)
+        for (const child of Array.from(rootElement.children)) {
+
+            // Skip if not an HTMLElement
+            if (!(child instanceof HTMLElement)) continue;
+
+            // Skip if this element IS a child component (check by ID in _children)
+            if (child.id && this._children.has(child.id)) {
+                console.log("Skipping child component:", child.id);
+                continue;
+            }
+
+            // Check if this element is the slot
+            if (child.getAttribute("data-slot") === slotName) {
+                return child;
+            }
+
+            // Recursively search this child's children
+            const found = this._findSlotElement(child, slotName);
+
+            if (found) {
+                return found;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets all components that are currently rendered in a slot
+     * @param {string} name - Name of the slot
+     * @returns {Map<string, Component>} Map of components in the slot (id -> component)
+     */
+    getChildrenFromSlot(name) {
+        const slot = this.getSlot(name);
+
+        if (!slot) {
+            return new Map();
+        }
+
+        const components = new Map();
+
+        // Check all direct children of the slot
+        Array.from(slot.children).forEach(child => {
+            if (child instanceof HTMLElement && child.id) {
+                const component = this.getChild(child.id);
+                if (component) {
+                    components.set(child.id, component);
+                }
+            }
+        });
+
+        return components;
+    }
 
 
     /**

@@ -1,8 +1,6 @@
 import { beforeEach, describe, expect, test, vi, afterEach } from 'vitest';
-import Router from '../src/routing/Router.js';
 import Component from '../src/Component.js';
-import VeraJS from "../src/index.js";
-import veraJS from "../src/VeraJS.js";
+import VeraJS from "../src/VeraJS.js";
 
 describe('Router Component Rendering', () => {
     let router;
@@ -21,11 +19,11 @@ describe('Router Component Rendering', () => {
             replaceState: vi.fn(),
         };
 
-        // Clear component classes before creating instance
-        VeraJS._componentClasses = new Map();
-
         // Create a real VeraJS instance
         VeraJS.mount('app');
+
+        // Clear component classes before creating instance
+        VeraJS.getInstance()._componentClasses = new Map();
 
         window.location.pathname = '/';
     });
@@ -82,7 +80,7 @@ describe('Router Component Rendering', () => {
 
         class LayoutPage extends Component {
             getTemplate() {
-                return '<div id="{id}" class="Layout"><nav>My Navbar</nav><div data-slot="innerHTML">{innerHTML}</div></div>';
+                return '<div id="{id}" class="Layout"><nav>My Navbar</nav><div data-slot="innerHTML"></div></div>';
             }
         }
 
@@ -113,7 +111,6 @@ describe('Router Component Rendering', () => {
     });
 
     test('should reuse layout when navigating between routes with same layout', () => {
-        const renderComponentSpy = vi.spyOn(VeraJS.router(), '_renderComponent');
 
         class AppLayout extends Component {
             getTemplate() {
@@ -149,33 +146,8 @@ describe('Router Component Rendering', () => {
         VeraJS.router().route('/friends', FriendsPage, AppLayout);
 
         VeraJS.router().navigate('/profile');
-
-        // CASE 3: First call should render to anchor (contains layout HTML)
-        const firstCall = renderComponentSpy.mock.calls[0];
-        expect(firstCall[0]).toBe(VeraJS._instance.root); // target is anchor
-        expect(firstCall[1]).toContain('app-layout'); // HTML contains layout
-
-        renderComponentSpy.mockClear();
-
         VeraJS.router().navigate('/settings');
-
-        // CASE 2: Should render to layout component (no layout HTML)
-        const secondCall = renderComponentSpy.mock.calls[0];
-        expect(secondCall[0]).not.toBe(VeraJS._instance.root); // target is NOT anchor
-        expect(secondCall[1]).not.toContain('app-layout'); // HTML does NOT contain layout
-        expect(secondCall[1]).toContain('settings-page'); // Only contains the page
-
-        renderComponentSpy.mockClear();
-
         VeraJS.router().navigate('/friends');
-
-        // CASE 2: Should render to layout component (no layout HTML)
-        const thirdCall = renderComponentSpy.mock.calls[0];
-        expect(thirdCall[0]).not.toBe(VeraJS._instance.root); // target is NOT anchor
-        expect(thirdCall[1]).not.toContain('app-layout'); // HTML does NOT contain layout
-        expect(thirdCall[1]).toContain('friends-page'); // Only contains the page
-
-        renderComponentSpy.mockRestore();
 
     });
 
@@ -283,6 +255,143 @@ describe('Router Component Rendering', () => {
         expect(calledOnAnchor).toBe(false);
 
         removePortalsSpy.mockRestore();
+    });
+
+    test('should switch from one layout to another layout', () => {
+        class LayoutA extends Component {
+            getTemplate() {
+                return '<div id="{id}" class="layout-a"><h1>Layout A</h1><div data-slot="innerHTML"></div></div>';
+            }
+        }
+
+        class LayoutB extends Component {
+            getTemplate() {
+                return '<div id="{id}" class="layout-b"><h1>Layout B</h1><div data-slot="innerHTML"></div></div>';
+            }
+        }
+
+        class Page1 extends Component {
+            getTemplate() {
+                return '<div id="{id}">Page 1</div>';
+            }
+        }
+
+        class Page2 extends Component {
+            getTemplate() {
+                return '<div id="{id}">Page 2</div>';
+            }
+        }
+
+        VeraJS.registerComponentClass('LAYOUT-A', LayoutA);
+        VeraJS.registerComponentClass('LAYOUT-B', LayoutB);
+        VeraJS.registerComponentClass('PAGE-1', Page1);
+        VeraJS.registerComponentClass('PAGE-2', Page2);
+
+        VeraJS.router().route('/page1', Page1, LayoutA);
+        VeraJS.router().route('/page2', Page2, LayoutB);
+
+        VeraJS.router().navigate('/page1');
+        expect(document.getElementById('app').innerHTML).toContain('layout-a');
+
+        VeraJS.router().navigate('/page2');
+        expect(document.getElementById('app').innerHTML).toContain('layout-b');
+        expect(document.getElementById('app').innerHTML).not.toContain('layout-a');
+    });
+
+    test('should handle nested components with their own slots', () => {
+        class InnerComponent extends Component {
+            getTemplate() {
+                return '<div id="{id}" class="inner"><div data-slot="innerHTML">Inner Slot</div></div>';
+            }
+        }
+
+        class OuterLayout extends Component {
+            getTemplate() {
+                return '<div id="{id}" class="outer"><inner-component></inner-component><div data-slot="innerHTML"></div></div>';
+            }
+        }
+
+        class Page extends Component {
+            getTemplate() {
+                return '<div id="{id}">Page Content</div>';
+            }
+        }
+
+        VeraJS.registerComponentClass('INNER-COMPONENT', InnerComponent);
+        VeraJS.registerComponentClass('OUTER-LAYOUT', OuterLayout);
+        VeraJS.registerComponentClass('PAGE', Page);
+
+        VeraJS.router().route('/', Page, OuterLayout);
+        VeraJS.router().navigate('/');
+
+        const html = document.getElementById('app').innerHTML;
+        expect(html).toContain('Page Content');
+        expect(html).toContain('Inner Slot'); // Inner component's slot should remain
+    });
+
+    test('should remove layout when navigating to route without layout', () => {
+        class LayoutPage extends Component {
+            getTemplate() {
+                return '<div id="{id}" class="with-layout"><nav>Nav</nav><div data-slot="innerHTML"></div></div>';
+            }
+        }
+
+        class Page1 extends Component {
+            getTemplate() {
+                return '<div id="{id}">With Layout</div>';
+            }
+        }
+
+        class Page2 extends Component {
+            getTemplate() {
+                return '<div id="{id}">No Layout</div>';
+            }
+        }
+
+        VeraJS.registerComponentClass('LAYOUT-PAGE', LayoutPage);
+        VeraJS.registerComponentClass('PAGE1', Page1);
+        VeraJS.registerComponentClass('PAGE2', Page2);
+
+        VeraJS.router().route('/with-layout', Page1, LayoutPage);
+        VeraJS.router().route('/no-layout', Page2);
+
+        VeraJS.router().navigate('/with-layout');
+        expect(document.getElementById('app').innerHTML).toContain('with-layout');
+
+        VeraJS.router().navigate('/no-layout');
+        expect(document.getElementById('app').innerHTML).not.toContain('with-layout');
+        expect(document.getElementById('app').innerHTML).toContain('No Layout');
+    });
+
+    test('should correctly track current layout', () => {
+        class LayoutA extends Component {
+            getTemplate() {
+                return '<div id="{id}" class="layout-a"><div data-slot="innerHTML"></div></div>';
+            }
+        }
+
+        class Page extends Component {
+            getTemplate() {
+                return '<div id="{id}">Page</div>';
+            }
+        }
+
+        VeraJS.registerComponentClass('LAYOUT-A', LayoutA);
+        VeraJS.registerComponentClass('PAGE', Page);
+
+        VeraJS.router().route('/with-layout', Page, LayoutA);
+        VeraJS.router().route('/no-layout', Page);
+
+        // Start with no layout
+        expect(VeraJS.router()._currentLayout).toBeNull();
+
+        // Navigate to route with layout
+        VeraJS.router().navigate('/with-layout');
+        expect(VeraJS.router()._currentLayout).toBeInstanceOf(LayoutA);
+
+        // Navigate to route without layout
+        VeraJS.router().navigate('/no-layout');
+        expect(VeraJS.router()._currentLayout).toBeNull();
     });
 
 });

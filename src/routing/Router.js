@@ -10,8 +10,8 @@ class Router {
     /** @type {VeraJS} */
     _vera
 
-    /** @type {string} */
-    _currentLayout;
+    /** @type {Component} */
+    _currentLayout = null;
 
     constructor(vera) {
         this._routes = new Map();        // For exact routes
@@ -198,86 +198,77 @@ class Router {
 
         const newLayout = match.component.layout;
 
-        // CASE 1: No layout needed
+        // CASE 1: Rendering component with no layout
         if (newLayout === null || !Component.isPrototypeOf(newLayout)) {
-            //console.log("CASE 1")
-            let html =  `<${tagName.toLowerCase()} id="${id}"></${tagName.toLowerCase()}>`;
-            this._renderComponent(this._anchorComponent,html);
+
+            console.log("CASE 1","Rendering component with no layout")
+
+            this._removedPortalElements(this._anchorComponent);
+            this._anchorComponent.getElement().innerHTML = `<${tagName.toLowerCase()} id="${id}"></${tagName.toLowerCase()}>`;
+            this._anchorComponent.evaluateChildComponents();
+            this._vera._evaluateRefs();
+
             this._currentLayout = null;
-            return;
-        }
-
-        // CASE 2: Same layout - just replace content inside layout
-        if (newLayout === this._currentLayout) {
-           // console.log("CASE 2")
-
-            let html = `<${tagName.toLowerCase()} id="${id}"></${tagName.toLowerCase()}>`;
-            let layoutComponent = this._anchorComponent.getChildren().values().next().value;
-
-            // Find the slot element
-            const slotElement = layoutComponent.getElement().getAttribute("data-slot") === "innerHTML"
-                ? layoutComponent.getElement()
-                : layoutComponent.getElement().querySelector('[data-slot="innerHTML"]');
-
-            if (slotElement) {
-                // Find the old page component inside the slot
-                // The page component's root element should be a direct child of the slot
-                const oldPageElement = slotElement.firstElementChild;
-
-                if (oldPageElement && oldPageElement.id) {
-                    // Get the component instance by ID
-                    const oldPageComponent = layoutComponent.getChild(oldPageElement.id);
-
-                    if (oldPageComponent) {
-                        // Remove only this page's portaled children
-                        this._removedPortalElements(oldPageComponent);
-                    }
-                }
-            }
-
-            this._renderComponent(layoutComponent,html,"innerHTML");
 
             return;
         }
 
-       // console.log("CASE 3")
-        // CASE 3: New/different layout - recreate everything (this clears layout portals too)
-        const layoutId = crypto.randomUUID();
+        // CASE 2: New layout, or different layout, replace the layout and inside content
+        if (!(this._currentLayout instanceof newLayout)) {
 
-        const layoutName = newLayout.name
-            .replace(/([A-Z])/g, (match, letter, index) => {
-                return index === 0 ? letter : '-' + letter;
-            })
-            .toUpperCase();
+            console.log("CASE 2", "New layout, or different layout, replace the layout and inside content");
 
-        const layoutHTML = `<${layoutName.toLowerCase()} id="${layoutId}">`;
-        const componentHTML = `<${tagName.toLowerCase()} id="${id}"></${tagName.toLowerCase()}>`;
-        const layoutEndHTML = `</${layoutName.toLowerCase()}>`;
-
-        this._renderComponent(this._anchorComponent,layoutHTML+componentHTML+layoutEndHTML);
-
-        // Store the layout CLASS reference, not the ID
-        this._currentLayout = newLayout;
-    }
-
-    _renderComponent(target, html, slot = null) {
-        // Remove all portaled elements from target component and its children
-        this._removedPortalElements(target);
-
-        if(slot !== null) {
-
-            if(target.getElement().getAttribute("data-slot") === "innerHTML"){
-                target.innerHTML = html;
-            }else {
-                target.getElement().querySelector(`[data-slot="${slot}"]`).innerHTML = html;
+            if(this._currentLayout instanceof Component) {
+                this._removedPortalElements(this._currentLayout);
+            }else{
+                this._removedPortalElements(this._anchorComponent);
             }
-        }else{
-            target.getElement().innerHTML = html;
+
+            let layoutId =  crypto.randomUUID();
+            let tagName = this._getTagName(newLayout);
+
+            this._anchorComponent.getElement().innerHTML = `<${tagName} id="${layoutId}"></${tagName}>`;
+            this._anchorComponent.evaluateChildComponents();
+
+            let newLayoutObject =  this._anchorComponent.getChild(layoutId);
+
+            this._currentLayout = newLayoutObject;
+
+            tagName = this._getTagName(match.component.component);
+
+            let slot = this._currentLayout.getSlot("innerHTML");
+
+            slot.innerHTML = `<${tagName.toLowerCase()} id="${id}"></${tagName.toLowerCase()}>`;
+
+            newLayoutObject.evaluateChildComponents();
+            this._vera._evaluateRefs();
+
+            return;
         }
 
-        target.evaluateChildComponents();
+        console.log("CASE 3","Rendering a component within the existing layout");
+
+        // CASE 3: Rendering a component within the existing layout)
+        const oldComponents = this._currentLayout.getChildrenFromSlot("innerHTML");
+
+        oldComponents.forEach((oldComponent, id) => {
+            // Remove this component's portaled elements
+            this._removedPortalElements(oldComponent);
+
+            // Remove from the layout's children
+            this._currentLayout.getChildren().delete(id);
+            oldComponent.setParent(null);
+        });
+
+
+        let slot = this._currentLayout.getSlot("innerHTML");
+
+        slot.innerHTML = `<${tagName.toLowerCase()} id="${id}"></${tagName.toLowerCase()}>`;
+
+        this._currentLayout.evaluateChildComponents();
         this._vera._evaluateRefs();
     }
+
 
     /**
      * Removes all the portaled elements belonging to a component, or its children.
@@ -285,18 +276,30 @@ class Router {
      * @private
      */
     _removedPortalElements(component) {
-        component.getChildren().forEach(child => {
+        // Convert to array first to avoid issues with modifying the map while iterating
+        const children = Array.from(component.getChildren().values());
+
+        children.forEach(child => {
+            // Recursively remove portaled elements from this child's children first
             this._removedPortalElements(child);
 
-            if(child.getElement().getAttribute('data-portaled') === 'true'){
-                child.getElement().remove();
+            // Check if element exists and is portaled
+            const element = child.getElement();
+            if (element && element.getAttribute('data-portaled') === 'true') {
+                element.remove();
                 component.getChildren().delete(child.getId());
                 child.setParent(null);
             }
-
         });
     }
 
+    _getTagName(tag){
+        return tag.name
+            .replace(/([A-Z])/g, (match, letter, index) => {
+                return index === 0 ? letter : '-' + letter;
+            })
+            .toUpperCase();
+    }
 
     start() {
         // Listen for browser back/forward
@@ -310,6 +313,8 @@ class Router {
 
         return this;
     }
+
+
 }
 
 export default Router;

@@ -11,7 +11,7 @@ class Router {
     _vera
 
     /** @type {Component} */
-    _currentLayout;
+    _currentLayout = null;
 
     constructor(vera) {
         this._routes = new Map();        // For exact routes

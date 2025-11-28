@@ -183,7 +183,6 @@ class Component {
     _findSlotElement(rootElement, slotName) {
         // Check all child elements (not components in _children Map)
         for (const child of Array.from(rootElement.children)) {
-            console.log("Checking for slot in:", child.tagName);
 
             // Skip if not an HTMLElement
             if (!(child instanceof HTMLElement)) continue;
@@ -201,6 +200,7 @@ class Component {
 
             // Recursively search this child's children
             const found = this._findSlotElement(child, slotName);
+
             if (found) {
                 return found;
             }

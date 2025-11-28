@@ -14,10 +14,6 @@ import { useStore, getStore } from './store.js';
 
 // Main framework
 import VeraJS from './VeraJS.js';
-import RouterView from "./routing/RouterView.js";
-
-// Register VeraRouterView
-VeraJS.registerComponentClass("VERA-ROUTER-VIEW", RouterView);
 
 // Export default
 export default VeraJS;
@@ -27,7 +23,6 @@ export {
     // Core classes
     Component,
     Router,
-    RouterView,
 
     // Reactive system
     useRef,

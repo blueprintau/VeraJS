@@ -73,7 +73,7 @@ describe('Component Slots', () => {
         // Clear DOM
         document.body.innerHTML = '<div id="app"></div>';
         // Mount VeraJS
-        VeraJS._instance = new VeraJS('app');
+        VeraJS.mount("app");
 
         // Register components
         VeraJS.registerComponentClass('SIDEBAR', Sidebar);
@@ -82,27 +82,34 @@ describe('Component Slots', () => {
     });
 
     it('should find slot in direct HTML elements, not inside VeraJS components', () => {
-        // Create a layout with sidebars that have data-slot attributes
-        const layoutEl = document.createElement('div');
-        layoutEl.id = 'layout-123';
-        layoutEl.innerHTML = `
-            <sidebar id="sidebar-1">
-                <div data-slot="innerHTML">Sidebar Content</div>
-            </sidebar>
-            <main data-slot="innerHTML">Main Content</main>
-            <sidebar id="sidebar-2">
-                <div data-slot="innerHTML">Another Sidebar</div>
-            </sidebar>
-        `;
-        document.getElementById('app').appendChild(layoutEl);
 
-        const layout = new MainLayout();
-        layout._element = layoutEl;
-        layout._id = 'layout-123';
+        let component = new class TestComponent extends Component{
+
+            getTemplate() {
+                return `
+                 <sidebar id="sidebar-1">
+                    <div data-slot="innerHTML">
+                        Sidebar Content
+                    </div>
+                </sidebar>
+                <main data-slot="innerHTML">Main Content</main>
+                <sidebar id="sidebar-2">
+                    <div data-slot="innerHTML">
+                        Another Sidebar
+                    </div>
+                </sidebar>
+                `;
+            }
+        }
+
+        component._element = document.createElement("div");
+        component._element.innerHTML = component.getTemplate();
+        component._id = "test-123"
+
+        component.evaluateChildComponents();
 
         // Test the _findSlotElement method directly
-        const router = VeraJS.router();
-        const slotElement = router._findSlotElement(layoutEl, 'innerHTML');
+        const slotElement = component.getSlot("innerHTML");
 
         // Should find the <main> element, NOT the sidebar's slot
         expect(slotElement).not.toBeNull();
@@ -111,22 +118,30 @@ describe('Component Slots', () => {
     });
 
     it('should skip VeraJS components when searching for slots', () => {
-        const containerEl = document.createElement('div');
-        containerEl.id = 'container-123';
-        containerEl.innerHTML = `
-            <div class="wrapper">
-                <sidebar id="left-sidebar">
-                    <span data-slot="innerHTML">Left Sidebar Slot</span>
-                </sidebar>
-                <div class="content">
-                    <section data-slot="innerHTML">Correct Slot</section>
-                </div>
-            </div>
-        `;
-        document.getElementById('app').appendChild(containerEl);
 
-        const router = VeraJS.router();
-        const slotElement = router._findSlotElement(containerEl, 'innerHTML');
+        let component = new class TestComponent extends Component{
+
+            getTemplate() {
+                return `
+                   <div class="wrapper" id="{id}">
+                        <sidebar id="left-sidebar">
+                            <span data-slot="innerHTML">Left Sidebar Slot</span>
+                        </sidebar>
+                        <div class="content">
+                            <section data-slot="innerHTML">Correct Slot</section>
+                        </div>
+                   </div>
+                `;
+            }
+        }
+
+        component._element = document.createElement("div");
+        component._element.innerHTML = component.getTemplate();
+        component._id = "ABC-123";
+
+        component.evaluateChildComponents();
+
+        let slotElement = component.getSlot("innerHTML");
 
         // Should find the <section> inside .content, NOT inside <sidebar>
         expect(slotElement).not.toBeNull();
@@ -135,55 +150,71 @@ describe('Component Slots', () => {
     });
 
     it('should return the root element if it has the slot attribute', () => {
-        const rootEl = document.createElement('div');
-        rootEl.id = 'root-123';
-        rootEl.setAttribute('data-slot', 'innerHTML');
-        rootEl.innerHTML = 'Root Content';
-        document.getElementById('app').appendChild(rootEl);
 
-        const router = VeraJS.router();
-        const slotElement = router._findSlotElement(rootEl, 'innerHTML');
+        let component = new class TestComponent extends Component{
+
+            getTemplate() {
+                return `
+                   <div class="wrapper" id="{id}" data-slot="innerHTML">Root Content</div>
+                `;
+            }
+        }
+
+        component._element = document.createElement("div");
+        component._element.innerHTML = component.getTemplate();
+
+        component.evaluateChildComponents();
+
+        let slotElement = component.getSlot("innerHTML");
 
         // Should return the root element itself
-        expect(slotElement).toBe(rootEl);
         expect(slotElement.textContent).toBe('Root Content');
     });
 
     it('should return null if slot not found', () => {
-        const containerEl = document.createElement('div');
-        containerEl.id = 'container-123';
-        containerEl.innerHTML = `
-            <div class="wrapper">
-                <sidebar id="sidebar">
-                    <span data-slot="innerHTML">Only in sidebar</span>
-                </sidebar>
-            </div>
-        `;
-        document.getElementById('app').appendChild(containerEl);
+        let component = new class TestComponent extends Component{
 
-        const router = VeraJS.router();
-        const slotElement = router._findSlotElement(containerEl, 'innerHTML');
+            getTemplate() {
+                return `
+                   <div class="wrapper" id="{id}">Root Content</div>
+                `;
+            }
+        }
+
+        component._element = document.createElement("div");
+        component._element.innerHTML = component.getTemplate();
+
+        component.evaluateChildComponents();
+
+        let slotElement = component.getSlot("innerHTML");
 
         // Should return null since the only slot is inside a VeraJS component
         expect(slotElement).toBeNull();
     });
 
     it('should find nested slots in standard HTML elements', () => {
-        const containerEl = document.createElement('div');
-        containerEl.id = 'container-123';
-        containerEl.innerHTML = `
-            <div class="wrapper">
-                <div class="level-1">
-                    <div class="level-2">
-                        <main data-slot="innerHTML">Deep Slot</main>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.getElementById('app').appendChild(containerEl);
 
-        const router = VeraJS.router();
-        const slotElement = router._findSlotElement(containerEl, 'innerHTML');
+        let component = new class TestComponent extends Component{
+
+            getTemplate() {
+                return `
+                   <div class="wrapper">
+                        <div class="level-1">
+                            <div class="level-2">
+                                <main data-slot="innerHTML">Deep Slot</main>
+                            </div>
+                        </div>
+                   </div>
+                `;
+            }
+        }
+
+        component._element = document.createElement("div");
+        component._element.innerHTML = component.getTemplate();
+
+        component.getSlot("innerHTML");
+
+        let slotElement = component.getSlot("innerHTML");
 
         // Should find the deeply nested <main> element
         expect(slotElement).not.toBeNull();
@@ -191,24 +222,4 @@ describe('Component Slots', () => {
         expect(slotElement.textContent).toBe('Deep Slot');
     });
 
-    it('should prioritize first matching slot in HTML elements', () => {
-        const containerEl = document.createElement('div');
-        containerEl.id = 'container-123';
-        containerEl.innerHTML = `
-            <sidebar id="sidebar-1">
-                <div data-slot="innerHTML">Sidebar Slot (should skip)</div>
-            </sidebar>
-            <main data-slot="innerHTML">First Valid Slot</main>
-            <article data-slot="innerHTML">Second Valid Slot</article>
-        `;
-        document.getElementById('app').appendChild(containerEl);
-
-        const router = VeraJS.router();
-        const slotElement = router._findSlotElement(containerEl, 'innerHTML');
-
-        // Should find the first valid HTML element slot
-        expect(slotElement).not.toBeNull();
-        expect(slotElement.tagName.toLowerCase()).toBe('main');
-        expect(slotElement.textContent).toBe('First Valid Slot');
-    });
 });

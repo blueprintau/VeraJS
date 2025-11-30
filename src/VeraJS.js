@@ -264,10 +264,11 @@ class VeraJS {
     /**
      * Register a component class with the framework
      * @param {string} key - Component tag name (uppercase with hyphens)
-     * @param {typeof Component} componentClass - Component class to register
+     * @param {typeof Component|Function} componentClass - Component class to register
      * @static
      */
     static registerComponentClass(key, componentClass){
+        // @ts-ignore
         VeraJS._componentClasses.set(key, componentClass);
     }
 
@@ -336,6 +337,77 @@ class VeraJS {
      */
     static getInstance(){
         return VeraJS._instance;
+    }
+
+    static helpers(){
+        return {
+            /**
+             * Provides a number of shared helper methods used by VeraJS
+             */
+            components :{
+                /**
+                 * Generate tag name from component class
+                 * @param {typeof Component|Function} componentClass
+                 * @returns {string} Tag name in UPPER-KEBAB-CASE
+                 */
+                generateTag(componentClass) {
+                    return componentClass.name
+                        .replace(/([A-Z])/g, (match, letter, index) => {
+                            return index === 0 ? letter : '-' + letter;
+                        })
+                        .toUpperCase();
+                },
+                /**
+                 * Get all class properties as a JSON-serializable object (primitives only - String,Number,Boolean)
+                 * @param {Component} instance
+                 * @param {string[]} [exclude=['_element', '_parent', '_children']] - Properties to exclude
+                 * @returns {Object}
+                 */
+                extractPropsFromInstance(instance,exclude = ['_element', '_parent', '_children']){
+                    if(!(instance instanceof Component)){
+                        throw new Error("[VeraJS Error] Invalid object provided, please provide a component instance only.");
+                    }
+
+                    const props = {};
+
+                    for (const key in instance) {
+                        // Skip if it's in the exclude list
+                        if (exclude.includes(key)) continue;
+
+                        // Only include primitives (string, number, boolean)
+                        const value = instance[key];
+                        const type = typeof value;
+
+                        if (type === 'string' || type === 'number' || type === 'boolean') {
+                            props[key] = value;
+                        }
+                    }
+
+                    return props;
+                },
+                /**
+                 * Returns an HTML compatible data attributes string based on a objects key value pairs
+                 * @param {Object} props
+                 * @param {string[]} [exclude=['id','innerHTML']] - Properties to exclude
+                 * @returns {Object}
+                 */
+                buildDataAttributesString(props, exclude = ['id','innerHTML']){
+                    let result = "";
+
+                    Object.keys(props).forEach(key => {
+
+                        if (!exclude.includes(key)) {
+                            // Escape quotes in attribute values
+                            const value = String(props[key]).replace(/"/g, '&quot;');
+                            result += ` data-${key}="${value}"`;
+                        }
+                    });
+
+                    return result;
+                }
+            }
+
+        }
     }
 
 }

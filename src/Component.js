@@ -246,9 +246,7 @@ class Component {
      */
     addComponent(componentClass, props = {}, targetElement = this._element) {
         // Get the tag name
-        let tagName = componentClass.name
-            .replace(/([a-z])([A-Z])/g, '$1-$2')
-            .toUpperCase();
+        let tagName = VeraJS.helpers().components.generateTag(componentClass);
 
         // Register component if not already registered
         if (!VeraJS.getComponentClasses().has(tagName)) {
@@ -259,14 +257,7 @@ class Component {
         const id = props.id || crypto.randomUUID();
 
         // Build data attributes string for HTML
-        let dataAttrs = '';
-        Object.keys(props).forEach(key => {
-            if (key !== 'id' && key !== 'innerHTML') {
-                // Escape quotes in attribute values
-                const value = String(props[key]).replace(/"/g, '&quot;');
-                dataAttrs += ` data-${key}="${value}"`;
-            }
-        });
+        let dataAttrs = VeraJS.helpers().components.buildDataAttributesString(props);
 
         // Get innerHTML if provided
         const innerHTML = props.innerHTML || '';
@@ -277,12 +268,83 @@ class Component {
         // Insert into DOM
         targetElement.insertAdjacentHTML('beforeend', elementHTML);
 
-        // Evaluate to instantiate the component
         this.evaluateChildComponents();
+
+        // Evaluate to instantiate the component
+        this._evaluateTemplateDirectives(this);
 
         // Return the component instance
         return this.getChild(id);
     }
+
+    /**
+     * Mount a pre-instantiated component with full lifecycle
+     * Use case: Create instance, configure it programmatically, then mount
+     * @param {Component} componentInstance - Already instantiated component
+     * @param {HTMLElement} [targetElement=this._element] - Container element
+     * @returns {Component} The mounted component instance
+     */
+    mountComponent(componentInstance,targetElement = this._element) {
+
+        // Get the tag name
+        let tagName = VeraJS.helpers().components.generateTag(componentInstance.constructor);
+
+        // Register component if not already registered
+        if (!VeraJS.getComponentClasses().has(tagName)) {
+            VeraJS.registerComponentClass(tagName, componentInstance.constructor);
+        }
+
+        //Set the id if it's not already set
+        if(!componentInstance._id){
+            componentInstance._id = crypto.randomUUID();
+        }
+
+        // Get props from instance
+        let props = {
+            id: componentInstance._id,
+            innerHTML: '',
+            ...componentInstance.getProps()
+        };
+
+        // Run beforeMount - check for abort
+        const outcome = componentInstance.beforeMount(props);
+
+        if (outcome === VeraJS.ABORT_MOUNT) {
+            return null;
+        }
+
+        // Create the element HTML string with data attributes
+        const elementHTML = componentInstance.getTemplate().replace(/\{([^}]+)}/g, (match, key) => {
+            return props[key] !== undefined ? props[key] : match;
+        });
+
+        // Insert into DOM
+        targetElement.insertAdjacentHTML('beforeend', elementHTML);
+
+        //Set our element
+        componentInstance._element = document.getElementById(componentInstance._id);
+
+        //Run init
+        componentInstance.init(props);
+
+        //Evaluate child components
+        this._evaluateTemplateDirectives(componentInstance);
+
+        componentInstance.evaluateChildComponents();
+
+        //run ready
+        componentInstance.ready(props);
+
+        this._addChild(componentInstance._id,componentInstance);
+
+        componentInstance._parent = this;
+
+        VeraJS.addComponent(componentInstance);
+
+        // Return the component instance
+        return this.getChild(componentInstance._id);
+    }
+
     /**
      * After template is rendered and element exists in DOM
      * @param {ComponentProps} [props] - Component properties from dataset and attributes
@@ -381,6 +443,14 @@ class Component {
      */
     setParent(parent){
         this._parent = parent;
+    }
+
+    /**
+     * Get all class properties as a JSON-serializable object (primitives only - String,Number,Boolean)
+     * @returns {Object}
+     */
+    getProps(){
+        return VeraJS.helpers().components.extractPropsFromInstance(this);
     }
 
 }

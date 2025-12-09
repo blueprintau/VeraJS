@@ -223,12 +223,30 @@ class VeraJS {
     }
 
     /**
+     * Removes a component instance to the framework (static method)
+     * @param {Component} component - Component instance to remove
+     * @static
+     */
+    _removeComponent(component){
+        this._components.delete(component.getId());
+    }
+
+    /**
      * Add a component instance to the framework (static method)
      * @param {Component} component - Component instance to add
      * @static
      */
     static addComponent(component){
         VeraJS._instance._addComponent(component);
+    }
+
+    /**
+     * Removes a component instance to the framework (static method)
+     * @param {Component} component - Component instance to remove
+     * @static
+     */
+    static removeComponent(component){
+        VeraJS._instance._removeComponent(component);
     }
 
     /**
@@ -404,6 +422,20 @@ class VeraJS {
                     });
 
                     return result;
+                }
+
+            },
+            html: {
+                /**
+                 * Replace placeholders in template string with data values
+                 * @param {string} template - Template string with {placeholder} syntax
+                 * @param {Object} data - Data object with values to replace
+                 * @returns {string} Processed template string
+                 */
+                replacePlaceholders(template, data) {
+                    return template.replace(/\{(\w+)}/g, (match, key) => {
+                        return data[key] !== undefined ? data[key] : match;
+                    });
                 }
             }
 

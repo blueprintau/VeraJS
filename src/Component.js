@@ -345,6 +345,33 @@ class Component {
         return this.getChild(componentInstance._id);
     }
 
+    unmount() {
+        this.beforeUnmount();
+
+        // Recursively unmount all children first
+        Array.from(this.getChildren().values()).forEach(child => {
+            child.unmount();
+        });
+
+        // Remove from parent's children map
+        if (this._parent) {
+            this._parent._children.delete(this._id);
+        }
+
+        // Remove from VeraJS global registry
+        VeraJS.removeComponent(this);
+
+        // Remove from DOM
+        if (this._element) {
+            this._element.remove();
+        }
+
+        // Clear references
+        this._element = null;
+        this._parent = null;
+        this._children.clear();
+    }
+
     /**
      * After template is rendered and element exists in DOM
      * @param {ComponentProps} [props] - Component properties from dataset and attributes
@@ -365,6 +392,11 @@ class Component {
      * @returns {void}
      */
     ready(props = {}){}
+
+    /**
+     * Optional lifecycle method called before the component unmounts
+     */
+    beforeUnmount(){}
 
     /**
      * Get the component's DOM element

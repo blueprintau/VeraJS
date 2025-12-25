@@ -87,6 +87,7 @@ describe('Component Slots', () => {
 
             getTemplate() {
                 return `
+             <div id="{id}">
                  <sidebar id="sidebar-1">
                     <div data-slot="innerHTML">
                         Sidebar Content
@@ -98,23 +99,28 @@ describe('Component Slots', () => {
                         Another Sidebar
                     </div>
                 </sidebar>
-                `;
+             </div>
+            `;
             }
         }
 
-        component._element = document.createElement("div");
-        component._element.innerHTML = component.getTemplate();
-        component._id = "test-123"
+        const wrapper = document.createElement("div");
+        const testId = "test-123";
+        wrapper.innerHTML = component.getTemplate().replace('{id}', testId);
+        document.body.appendChild(wrapper);
+
+        component._element = document.getElementById(testId);
+        component._id = testId;
 
         component.evaluateChildComponents();
 
-        // Test the _findSlotElement method directly
+        // Test the getSlot method
         const slotElement = component.getSlot("innerHTML");
 
         // Should find the <main> element, NOT the sidebar's slot
         expect(slotElement).not.toBeNull();
         expect(slotElement.tagName.toLowerCase()).toBe('main');
-        expect(slotElement.textContent).toBe('Main Content');
+        expect(slotElement.textContent.trim()).toBe('Main Content');
     });
 
     it('should skip VeraJS components when searching for slots', () => {
@@ -123,21 +129,25 @@ describe('Component Slots', () => {
 
             getTemplate() {
                 return `
-                   <div class="wrapper" id="{id}">
-                        <sidebar id="left-sidebar">
-                            <span data-slot="innerHTML">Left Sidebar Slot</span>
-                        </sidebar>
-                        <div class="content">
-                            <section data-slot="innerHTML">Correct Slot</section>
-                        </div>
-                   </div>
-                `;
+               <div class="wrapper" id="{id}">
+                    <sidebar id="left-sidebar">
+                        <span data-slot="innerHTML">Left Sidebar Slot</span>
+                    </sidebar>
+                    <div class="content">
+                        <section data-slot="innerHTML">Correct Slot</section>
+                    </div>
+               </div>
+            `;
             }
         }
 
-        component._element = document.createElement("div");
-        component._element.innerHTML = component.getTemplate();
-        component._id = "ABC-123";
+        const wrapper = document.createElement("div");
+        const testId = "ABC-123";
+        wrapper.innerHTML = component.getTemplate().replace('{id}', testId);
+        document.body.appendChild(wrapper);
+
+        component._element = document.getElementById(testId);
+        component._id = testId;
 
         component.evaluateChildComponents();
 
@@ -146,8 +156,9 @@ describe('Component Slots', () => {
         // Should find the <section> inside .content, NOT inside <sidebar>
         expect(slotElement).not.toBeNull();
         expect(slotElement.tagName.toLowerCase()).toBe('section');
-        expect(slotElement.textContent).toBe('Correct Slot');
+        expect(slotElement.textContent.trim()).toBe('Correct Slot');
     });
+
 
     it('should return the root element if it has the slot attribute', () => {
 

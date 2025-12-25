@@ -103,7 +103,21 @@ class Component {
                 let props = child.dataset;
 
                 props.id = child.id || props.id || crypto.randomUUID();
-                props.innerHTML = child.innerHTML;
+
+                // STEP 1: Parse and extract slot content BEFORE setting props.innerHTML
+                let slotParser = document.createElement("div");
+                slotParser.innerHTML = child.innerHTML;
+
+                // Extract <template slot="name"> elements
+                const templates = slotParser.querySelectorAll('template[slot]');
+                templates.forEach((template) => {
+                    const slotName = template.getAttribute('slot');
+                    props[slotName] = template.innerHTML;
+                    template.remove();
+                });
+
+                // Now set innerHTML with remaining content (default slot)
+                props.innerHTML = slotParser.innerHTML;
 
                 let instance = new (VeraJS.getComponentClasses().get(child.tagName))();
                 let outcome = instance.beforeMount(props);
@@ -112,6 +126,7 @@ class Component {
                     return;
                 }
 
+                // STEP 2: Render the component template
                 child.innerHTML = instance.getTemplate().replace(/\{([^}]+)}/g, (match, key) => {
                     return props[key] !== undefined ? props[key] : match;
                 });
@@ -128,7 +143,11 @@ class Component {
 
                 instance._id = props.id;
                 instance._parent = this;
-                this._addChild(instance._id,instance)
+
+                // STEP 3: Process <slot> elements in the rendered template
+                this._processSlots(instance, props);
+
+                this._addChild(instance._id, instance)
 
                 if (instance._element) {
                     instance.init(props);
@@ -160,11 +179,39 @@ class Component {
     }
 
     /**
+     * Process slot elements in a component, handling default content and slot distribution
+     * @param {Component} componentInstance - The component instance to process slots for
+     * @param {Object} props - Props containing potential slot content
+     * @private
+     */
+    _processSlots(componentInstance, props) {
+        const slots = componentInstance.getElement().querySelectorAll("slot");
+
+        slots.forEach((slot) => {
+            const slotName = slot.name || 'innerHTML';
+            const providedContent = props[slotName];
+            const hasProvidedContent = providedContent && providedContent.trim() !== '';
+
+            if (hasProvidedContent) {
+                // User provided content - insert it before the slot
+                slot.insertAdjacentHTML('beforebegin', providedContent);
+                slot.remove(); // Remove slot (discarding any default content)
+            } else if (slot.innerHTML.trim() !== '') {
+                // No user content provided, but slot has default content - keep it
+                unwrapElement(slot);
+            } else {
+                // Empty slot with no content provided - just remove it
+                slot.remove();
+            }
+        });
+    }
+
+    /**
      * @param {String} name The name of the slot we are trying to retrieve
      * @returns {HTMLElement|null} Returns the slots HTMLElement.
      */
     getSlot(name){
-        // First check if this element itself is the slot
+
         if (this._element.getAttribute('data-slot') === name) {
             return this._element;
         }
@@ -284,7 +331,7 @@ class Component {
      * @param {HTMLElement} [targetElement=this._element] - Container element
      * @returns {Component} The mounted component instance
      */
-    mountComponent(componentInstance,targetElement = this._element) {
+    mountComponent(componentInstance, targetElement = this._element) {
 
         // Get the tag name
         let tagName = VeraJS.helpers().components.generateTag(componentInstance.constructor);
@@ -324,6 +371,9 @@ class Component {
         //Set our element
         componentInstance._element = document.getElementById(componentInstance._id);
 
+        // Process slots using the centralized helper
+        this._processSlots(componentInstance, props);
+
         //Run init
         componentInstance.init(props);
 
@@ -335,7 +385,7 @@ class Component {
         //run ready
         componentInstance.ready(props);
 
-        this._addChild(componentInstance._id,componentInstance);
+        this._addChild(componentInstance._id, componentInstance);
 
         componentInstance._parent = this;
 

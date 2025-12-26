@@ -17,6 +17,32 @@ class StandardSlotComponent extends Component{
 
 }
 
+class NamedSlotComponent extends Component{
+
+
+    getTemplate() {
+        return `
+            <div id="{id}">
+             <slot name="header"><h1>My Page</h1></slot>
+            </div>
+        `;
+    }
+
+}
+
+class MultipleNamedSlotComponent extends Component{
+
+    getTemplate() {
+        return `
+            <div id="{id}">
+             <slot name="header"><h1>My Page</h1></slot>
+             <slot name="breadcrumbs"><a href="/">Home</a><a href="/pages">Pages</a></slot>
+            </div>
+        `;
+    }
+
+}
+
 class SlotComponentWithDefaultValue extends Component{
 
     getTemplate() {
@@ -79,6 +105,48 @@ describe('Component._findSlotElement()', () => {
         expect(layoutComponent.getElement().innerHTML).not.toContain("<slot>");
         expect(layoutComponent.getElement().innerHTML).not.toContain("</slot>");
         expect(layoutComponent.getElement().innerHTML).toContain('<div class="default">Default Page</div>');
+    });
+
+
+    it('should yield the innerHTML if not named',()=>{
+
+        layoutComponent.addComponent(StandardSlotComponent,{
+            "innerHTML" : "<h1>Slot Title</h1><p>Slot content</p>"
+        });
+
+        expect(layoutComponent.getElement().innerHTML).not.toContain("<slot></slot>");
+        expect(layoutComponent.getElement().innerHTML).toContain("<h1>Slot Title</h1>");
+        expect(layoutComponent.getElement().innerHTML).toContain("<p>Slot content</p>");
+
+    });
+
+    it('should yield to matching template content',()=>{
+
+        layoutComponent.addComponent(NamedSlotComponent,{
+            "innerHTML" : "<template slot='header'><h1>Jacks Page</h1></template>"
+        });
+
+        expect(layoutComponent.getElement().innerHTML).not.toContain("<slot>");
+        expect(layoutComponent.getElement().innerHTML).not.toContain("My Page");
+        expect(layoutComponent.getElement().innerHTML).toContain("Jacks Page");
+    });
+
+    it('should yield to multiple matching template sections',()=>{
+        layoutComponent.addComponent(MultipleNamedSlotComponent,{
+            "innerHTML" : `
+                        <template slot="header">
+                            <h1>Jacks Page</h1>
+                        </template>
+                        <template slot="breadcrumbs">
+                            <a href="/pages">All Profiles</a>
+                        </template>
+            `
+        });
+
+        expect(layoutComponent.getElement().innerHTML).not.toContain("<slot>");
+        expect(layoutComponent.getElement().innerHTML).not.toContain('<a href="/">Home</a><a href="/pages">Pages</a>');
+        expect(layoutComponent.getElement().innerHTML).toContain(' <a href="/pages">All Profiles</a>');
+        expect(layoutComponent.getElement().innerHTML).toContain('<h1>Jacks Page</h1>');
     })
 
 

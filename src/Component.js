@@ -110,6 +110,7 @@ class Component {
 
                 // Extract <template slot="name"> elements
                 const templates = slotParser.querySelectorAll('template[slot]');
+
                 templates.forEach((template) => {
                     const slotName = template.getAttribute('slot');
                     props[slotName] = template.innerHTML;
@@ -145,7 +146,7 @@ class Component {
                 instance._parent = this;
 
                 // STEP 3: Process <slot> elements in the rendered template
-                this._processSlots(instance, props);
+                this._processSlots(props);
 
                 this._addChild(instance._id, instance)
 
@@ -180,12 +181,12 @@ class Component {
 
     /**
      * Process slot elements in a component, handling default content and slot distribution
-     * @param {Component} componentInstance - The component instance to process slots for
      * @param {Object} props - Props containing potential slot content
      * @private
      */
-    _processSlots(componentInstance, props) {
-        const slots = componentInstance.getElement().querySelectorAll("slot");
+    _processSlots(props) {
+
+        const slots = this._getSlots();
 
         slots.forEach((slot) => {
             const slotName = slot.name || 'innerHTML';
@@ -254,6 +255,52 @@ class Component {
         }
 
         return null;
+    }
+
+    /**
+     * Get all slot elements that belong to this component (not child components)
+     * @returns {HTMLSlotElement[]|HTMLElement[]}
+     * @private
+     */
+    _getSlots() {
+        const slots = [];
+
+        // Recursively find slots, but stop at child component boundaries
+        this._findSlots(this._element, slots);
+
+        return slots;
+    }
+
+    /**
+     * Recursively find slot elements, stopping at child component boundaries
+     * @param {HTMLElement} element - Element to search within
+     * @param {HTMLSlotElement[]} slots - Array to accumulate found slots
+     * @private
+     */
+    _findSlots(element, slots) {
+
+        if(!(element instanceof HTMLElement)){
+            throw new Error(`[VeraComponent Error] element is not instance of HTMLElement.\n`+JSON.stringify(element));
+        }
+
+        for (const child of Array.from(element.children)) {
+
+            // Skip if not an HTMLElement
+            if (!(child instanceof HTMLElement)) continue;
+
+            // STOP if this element is a child component (boundary)
+            if (child.id && this._children.has(child.id)) {
+                continue;  // Don't recurse into child components
+            }
+
+            // If this is a slot, add it
+            if (child instanceof HTMLSlotElement) {
+                slots.push(child);
+            }
+
+            // Recurse into this child's children (since it's not a component boundary)
+            this._findSlots(child, slots);
+        }
     }
 
     /**
@@ -372,7 +419,7 @@ class Component {
         componentInstance._element = document.getElementById(componentInstance._id);
 
         // Process slots using the centralized helper
-        this._processSlots(componentInstance, props);
+        this._processSlots(props);
 
         //Run init
         componentInstance.init(props);

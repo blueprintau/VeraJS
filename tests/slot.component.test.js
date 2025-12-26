@@ -147,7 +147,7 @@ describe('Component._findSlotElement()', () => {
         expect(layoutComponent.getElement().innerHTML).not.toContain('<a href="/">Home</a><a href="/pages">Pages</a>');
         expect(layoutComponent.getElement().innerHTML).toContain(' <a href="/pages">All Profiles</a>');
         expect(layoutComponent.getElement().innerHTML).toContain('<h1>Jacks Page</h1>');
-    })
+    });
 
 
 })
